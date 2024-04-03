@@ -2,10 +2,20 @@
 # yarn lockfile v1
 
 
+"@layerzerolabs/lz-evm-messagelib-v2@^2.1.27":
+  version "2.1.27"
+  resolved "https://registry.yarnpkg.com/@layerzerolabs/lz-evm-messagelib-v2/-/lz-evm-messagelib-v2-2.1.27.tgz#b5517288de73f55c3717b2cb433af08bbcd138ca"
+  integrity sha512-7om/nPsxfgfRNsdgsj01foEOXg10crMWRu7B7/LnqjZ9LB5Q0TrF/Hw+r7OL/TtcPqLGpiadN97HSlcuAFU4Bg==
+
 "@layerzerolabs/lz-evm-oapp-v2@^2.1.18":
   version "2.1.27"
   resolved "https://registry.yarnpkg.com/@layerzerolabs/lz-evm-oapp-v2/-/lz-evm-oapp-v2-2.1.27.tgz#23002e7aed920972bb6506b75716fe2459b961ab"
   integrity sha512-euZO+oEqmKFf7ESNBCcR5ofOLaoLroxnFChjaHY0cBLc3rNq5WRY1zhMhqVqxpqhsjfpt3nsnea+DbBAgCjKxw==
+
+"@layerzerolabs/lz-evm-protocol-v2@^2.1.27":
+  version "2.1.27"
+  resolved "https://registry.yarnpkg.com/@layerzerolabs/lz-evm-protocol-v2/-/lz-evm-protocol-v2-2.1.27.tgz#7f2ec78af67fe66cd75a7eb90aa37329417e2605"
+  integrity sha512-kJlPYILW/VLxeeWagFYJpP/4EFeCw7Yuqp+qpv/+lnGDSXflvanGVnCApBJtEmirMva4E0nEkTFd0x9rfu/1Dg==
 
 "@openzeppelin/contracts@^5.0.1":
   version "5.0.2"
