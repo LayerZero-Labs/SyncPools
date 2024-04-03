@@ -2,3 +2,16 @@
 # yarn lockfile v1
 
 
+"@layerzerolabs/lz-evm-oapp-v2@^2.1.18":
+  version "2.1.27"
+  resolved "https://registry.yarnpkg.com/@layerzerolabs/lz-evm-oapp-v2/-/lz-evm-oapp-v2-2.1.27.tgz#23002e7aed920972bb6506b75716fe2459b961ab"
+  integrity sha512-euZO+oEqmKFf7ESNBCcR5ofOLaoLroxnFChjaHY0cBLc3rNq5WRY1zhMhqVqxpqhsjfpt3nsnea+DbBAgCjKxw==
+
+"@openzeppelin/contracts@^5.0.1":
+  version "5.0.2"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-5.0.2.tgz#b1d03075e49290d06570b2fd42154d76c2a5d210"
+  integrity sha512-ytPc6eLGcHHnapAZ9S+5qsdomhjo6QBHTDRRBFfTxXIpsicMhVPouPgmUPebZZZGX7vt9USA+Z+0M0dSVtSUEA==
+
+"forge-std@github:foundry-rs/forge-std#v1.8.1":
+  version "1.7.6"
+  resolved "https://codeload.github.com/foundry-rs/forge-std/tar.gz/bb4ceea94d6f10eeb5b41dc2391c6c8bf8e734ef"

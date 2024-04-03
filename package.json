@@ -2,5 +2,18 @@
   "name": "syncpools",
   "version": "1.0.0",
   "author": "Jorge Paladin <jorge@paladinsec.co>",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "forge-std": "github:foundry-rs/forge-std#v1.8.1"
+  },
+  "dependencies": {
+    "@layerzerolabs/lz-evm-oapp-v2": "^2.1.18"
+  },
+  "resolutions": {
+    "@openzeppelin/contracts": "^5.0.1"
+  },
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test"
+  }
 }
