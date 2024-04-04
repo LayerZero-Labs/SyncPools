@@ -24,15 +24,7 @@ contract L2LineaSyncPoolETHUpgradeable is L2BaseSyncPoolUpgradeable, BaseMesseng
      * @dev Constructor for L2 Linea Sync Pool for ETH
      * @param endpoint Address of the LayerZero endpoint
      */
-    constructor(
-        address messenger,
-        address l2ExchangeRateProvider,
-        address rateLimiter,
-        address tokenOut,
-        uint32 dstEid,
-        address endpoint,
-        address owner
-    ) L2BaseSyncPoolUpgradeable(endpoint) {}
+    constructor(address endpoint) L2BaseSyncPoolUpgradeable(endpoint) {}
 
     /**
      * @dev Initialize the contract
