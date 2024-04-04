@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
+import {BaseMessenger} from "../utils/BaseMessenger.sol";
 import {IL1SyncPool} from "../interfaces/IL1SyncPool.sol";
 import {IL1Receiver} from "../interfaces/IL1Receiver.sol";
 
@@ -12,15 +13,13 @@ import {IL1Receiver} from "../interfaces/IL1Receiver.sol";
  * This contract is intended to receive messages from the native L2 bridge, decode the message
  * and then forward it to the L1 sync pool.
  */
-abstract contract L1BaseReceiver is Ownable, IL1Receiver {
+abstract contract L1BaseReceiver is Ownable, BaseMessenger, IL1Receiver {
     error L1BaseReceiver__UnauthorizedCaller();
     error L1BaseReceiver__UnauthorizedL2Sender();
 
     event L1SyncPoolSet(address l1SyncPool);
-    event MessengerSet(address messenger);
 
     IL1SyncPool private _l1SyncPool;
-    address private _messenger;
 
     /**
      * @dev Constructor for L1 Base Receiver
@@ -28,9 +27,8 @@ abstract contract L1BaseReceiver is Ownable, IL1Receiver {
      * @param messenger Address of the messenger contract
      * @param owner Address of the owner
      */
-    constructor(address l1SyncPool, address messenger, address owner) Ownable(owner) {
+    constructor(address l1SyncPool, address messenger, address owner) Ownable(owner) BaseMessenger(messenger) {
         _setL1SyncPool(l1SyncPool);
-        _setMessenger(messenger);
     }
 
     /**
@@ -42,27 +40,11 @@ abstract contract L1BaseReceiver is Ownable, IL1Receiver {
     }
 
     /**
-     * @dev Get the messenger contract address
-     * @return The messenger contract address
-     */
-    function getMessenger() public view virtual returns (address) {
-        return _messenger;
-    }
-
-    /**
      * @dev Set the L1 sync pool address
      * @param l1SyncPool The L1 sync pool address
      */
     function setL1SyncPool(address l1SyncPool) public virtual onlyOwner {
         _setL1SyncPool(l1SyncPool);
-    }
-
-    /**
-     * @dev Set the messenger contract address
-     * @param messenger The messenger contract address
-     */
-    function setMessenger(address messenger) public virtual onlyOwner {
-        _setMessenger(messenger);
     }
 
     /**
@@ -73,16 +55,6 @@ abstract contract L1BaseReceiver is Ownable, IL1Receiver {
         _l1SyncPool = IL1SyncPool(l1SyncPool);
 
         emit L1SyncPoolSet(l1SyncPool);
-    }
-
-    /**
-     * @dev Internal function to set the messenger contract address
-     * @param messenger The messenger contract address
-     */
-    function _setMessenger(address messenger) internal virtual {
-        _messenger = messenger;
-
-        emit MessengerSet(messenger);
     }
 
     /**
@@ -104,7 +76,7 @@ abstract contract L1BaseReceiver is Ownable, IL1Receiver {
         uint256 amountOut,
         uint256 valueToL1SyncPool
     ) internal virtual {
-        if (msg.sender != _messenger) revert L1BaseReceiver__UnauthorizedCaller();
+        if (msg.sender != getMessenger()) revert L1BaseReceiver__UnauthorizedCaller();
 
         IL1SyncPool l1SyncPool = _l1SyncPool;
 

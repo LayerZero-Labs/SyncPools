@@ -6,6 +6,7 @@ import {
     MessagingReceipt
 } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 
+import {BaseMessenger} from "../../utils/BaseMessenger.sol";
 import {L2BaseSyncPool} from "../L2BaseSyncPool.sol";
 import {ICrossDomainMessenger} from "../../interfaces/ICrossDomainMessenger.sol";
 import {Constants} from "../../libraries/Constants.sol";
@@ -16,16 +17,8 @@ import {IL1Receiver} from "../../interfaces/IL1Receiver.sol";
  * @dev A sync pool that only supports ETH on Mode L2
  * This contract allows to send ETH from L2 to L1 during the sync process
  */
-contract L2ModeSyncPoolETH is L2BaseSyncPool {
+contract L2ModeSyncPoolETH is L2BaseSyncPool, BaseMessenger {
     error L2ModeSyncPoolETH__OnlyETH();
-
-    event MessengerSet(address messenger);
-
-    /**
-     * @dev The messenger contract, this is the contract that should be called
-     * to send messages to the L1
-     */
-    ICrossDomainMessenger private _messenger;
 
     /**
      * @dev Constructor for L2 Mode Sync Pool for ETH
@@ -45,35 +38,7 @@ contract L2ModeSyncPoolETH is L2BaseSyncPool {
         uint32 dstEid,
         address endpoint,
         address owner
-    ) L2BaseSyncPool(l2ExchangeRateProvider, rateLimiter, tokenOut, dstEid, endpoint, owner) {
-        _setMessenger(messenger);
-    }
-
-    /**
-     * @dev Get the messenger contract address
-     * @return The messenger contract address
-     */
-    function getMessenger() public view virtual returns (address) {
-        return address(_messenger);
-    }
-
-    /**
-     * @dev Set the messenger contract address
-     * @param messenger The messenger contract address
-     */
-    function setMessenger(address messenger) public virtual onlyOwner {
-        _setMessenger(messenger);
-    }
-
-    /**
-     * @dev Internal function to set the messenger contract address
-     * @param messenger The messenger contract address
-     */
-    function _setMessenger(address messenger) internal virtual {
-        _messenger = ICrossDomainMessenger(messenger);
-
-        emit MessengerSet(messenger);
-    }
+    ) L2BaseSyncPool(l2ExchangeRateProvider, rateLimiter, tokenOut, dstEid, endpoint, owner) BaseMessenger(messenger) {}
 
     /**
      * @dev Only allows ETH to be received
@@ -120,7 +85,7 @@ contract L2ModeSyncPoolETH is L2BaseSyncPool {
         bytes memory data = abi.encode(originEid, receipt.guid, l1TokenIn, amountIn, amountOut);
         bytes memory message = abi.encodeWithSelector(IL1Receiver.onMessageReceived.selector, data);
 
-        _messenger.sendMessage{value: amountIn}(peer, message, 0);
+        ICrossDomainMessenger(getMessenger()).sendMessage{value: amountIn}(peer, message, 0);
 
         return receipt;
     }
