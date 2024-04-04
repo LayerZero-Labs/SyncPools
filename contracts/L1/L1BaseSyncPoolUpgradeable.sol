@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {OAppReceiver, OAppCore} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppReceiver.sol";
+import {
+    OAppReceiverUpgradeable,
+    OAppCoreUpgradeable
+} from "@layerzerolabs/lz-evm-oapp-v2/contracts-upgradeable/oapp/OAppReceiverUpgradeable.sol";
 import {Origin} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 
 import {IL1SyncPool} from "../interfaces/IL1SyncPool.sol";
@@ -23,7 +26,24 @@ import {Constants} from "../libraries/Constants.sol";
  * anticipating the actual 100 ETH deposit (as it takes ~7 days to finalize the deposit), and finalize the deposit
  * when the 100 ETH is actually received from the L2.
  */
-abstract contract L1BaseSyncPool is OAppReceiver, ReentrancyGuard, IL1SyncPool {
+abstract contract L1BaseSyncPoolUpgradeable is OAppReceiverUpgradeable, ReentrancyGuardUpgradeable, IL1SyncPool {
+    struct L1BaseSyncPoolStorage {
+        IERC20 tokenOut;
+        address lockBox;
+        uint256 totalUnbackedTokens;
+        mapping(uint32 => address) receivers;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256(syncpools.storage.l1basesyncpool)) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant L1BaseSyncPoolStorageLocation =
+        0xd96cd964f71a052084af61290ff53294a8f76de4d8f66ba7682fe6598635ef00;
+
+    function _getL1BaseSyncPoolStorage() internal pure returns (L1BaseSyncPoolStorage storage $) {
+        assembly {
+            $.slot := L1BaseSyncPoolStorageLocation
+        }
+    }
+
     error L1BaseSyncPool__UnauthorizedCaller();
     error L1BaseSyncPool__NativeTransferFailed();
 
@@ -40,24 +60,18 @@ abstract contract L1BaseSyncPool is OAppReceiver, ReentrancyGuard, IL1SyncPool {
     event Fee(uint32 indexed originEid, bytes32 guid, uint256 actualAmountOut, uint256 expectedAmountOut);
     event Sweep(address token, address receiver, uint256 amount);
 
-    IERC20 private _tokenOut;
-    address private _lockBox;
-
-    uint256 private _totalUnbackedTokens;
-
-    mapping(uint32 => address) private _receivers;
-
     /**
      * @dev Constructor for L1 Base Sync Pool
-     * @param tokenOut Address of the main token
-     * @param lockBox Address of the lock box
      * @param endpoint Address of the LayerZero endpoint
-     * @param owner Address of the owner
      */
-    constructor(address tokenOut, address lockBox, address endpoint, address owner)
-        OAppCore(endpoint, owner)
-        Ownable(owner)
-    {
+    constructor(address endpoint) OAppCoreUpgradeable(endpoint) {}
+
+    function __L1BaseSyncPool_init(address tokenOut, address lockBox, address delegate) internal onlyInitializing {
+        __OAppCore_init(delegate);
+        __L1BaseSyncPool_init_unchained(tokenOut, lockBox);
+    }
+
+    function __L1BaseSyncPool_init_unchained(address tokenOut, address lockBox) internal onlyInitializing {
         _setTokenOut(tokenOut);
         _setLockBox(lockBox);
     }
@@ -67,7 +81,8 @@ abstract contract L1BaseSyncPool is OAppReceiver, ReentrancyGuard, IL1SyncPool {
      * @return The main token address
      */
     function getTokenOut() public view virtual returns (address) {
-        return address(_tokenOut);
+        L1BaseSyncPoolStorage storage $ = _getL1BaseSyncPoolStorage();
+        return address($.tokenOut);
     }
 
     /**
@@ -75,7 +90,8 @@ abstract contract L1BaseSyncPool is OAppReceiver, ReentrancyGuard, IL1SyncPool {
      * @return The lock box address
      */
     function getLockBox() public view virtual returns (address) {
-        return _lockBox;
+        L1BaseSyncPoolStorage storage $ = _getL1BaseSyncPoolStorage();
+        return $.lockBox;
     }
 
     /**
@@ -84,7 +100,8 @@ abstract contract L1BaseSyncPool is OAppReceiver, ReentrancyGuard, IL1SyncPool {
      * @return The receiver address
      */
     function getReceiver(uint32 originEid) public view virtual returns (address) {
-        return _receivers[originEid];
+        L1BaseSyncPoolStorage storage $ = _getL1BaseSyncPoolStorage();
+        return $.receivers[originEid];
     }
 
     /**
@@ -92,7 +109,8 @@ abstract contract L1BaseSyncPool is OAppReceiver, ReentrancyGuard, IL1SyncPool {
      * @return The total unbacked tokens
      */
     function getTotalUnbackedTokens() public view virtual returns (uint256) {
-        return _totalUnbackedTokens;
+        L1BaseSyncPoolStorage storage $ = _getL1BaseSyncPoolStorage();
+        return $.totalUnbackedTokens;
     }
 
     /**
@@ -111,7 +129,9 @@ abstract contract L1BaseSyncPool is OAppReceiver, ReentrancyGuard, IL1SyncPool {
         override
         nonReentrant
     {
-        if (msg.sender != _receivers[originEid]) revert L1BaseSyncPool__UnauthorizedCaller();
+        L1BaseSyncPoolStorage storage $ = _getL1BaseSyncPoolStorage();
+
+        if (msg.sender != $.receivers[originEid]) revert L1BaseSyncPool__UnauthorizedCaller();
 
         _finalizeDeposit(originEid, guid, tokenIn, amountIn, amountOut);
     }
@@ -200,7 +220,8 @@ abstract contract L1BaseSyncPool is OAppReceiver, ReentrancyGuard, IL1SyncPool {
      * @param tokenOut Address of the main token
      */
     function _setTokenOut(address tokenOut) internal virtual {
-        _tokenOut = IERC20(tokenOut);
+        L1BaseSyncPoolStorage storage $ = _getL1BaseSyncPoolStorage();
+        $.tokenOut = IERC20(tokenOut);
 
         emit TokenOutSet(tokenOut);
     }
@@ -211,7 +232,8 @@ abstract contract L1BaseSyncPool is OAppReceiver, ReentrancyGuard, IL1SyncPool {
      * @param receiver Receiver address
      */
     function _setReceiver(uint32 originEid, address receiver) internal virtual {
-        _receivers[originEid] = receiver;
+        L1BaseSyncPoolStorage storage $ = _getL1BaseSyncPoolStorage();
+        $.receivers[originEid] = receiver;
 
         emit ReceiverSet(originEid, receiver);
     }
@@ -221,7 +243,8 @@ abstract contract L1BaseSyncPool is OAppReceiver, ReentrancyGuard, IL1SyncPool {
      * @param lockBox Address of the lock box
      */
     function _setLockBox(address lockBox) internal virtual {
-        _lockBox = lockBox;
+        L1BaseSyncPoolStorage storage $ = _getL1BaseSyncPoolStorage();
+        $.lockBox = lockBox;
 
         emit LockBoxSet(lockBox);
     }
@@ -245,9 +268,11 @@ abstract contract L1BaseSyncPool is OAppReceiver, ReentrancyGuard, IL1SyncPool {
         uint256 actualAmountOut,
         uint256 expectedAmountOut
     ) internal virtual {
-        IERC20 tokenOut = _tokenOut;
+        L1BaseSyncPoolStorage storage $ = _getL1BaseSyncPoolStorage();
 
-        uint256 totalUnbackedTokens = _totalUnbackedTokens;
+        IERC20 tokenOut = $.tokenOut;
+
+        uint256 totalUnbackedTokens = $.totalUnbackedTokens;
         uint256 balance = tokenOut.balanceOf(address(this));
 
         uint256 totalAmountOut = expectedAmountOut + totalUnbackedTokens;
@@ -256,11 +281,11 @@ abstract contract L1BaseSyncPool is OAppReceiver, ReentrancyGuard, IL1SyncPool {
         if (balance < totalAmountOut) {
             amountToSend = balance;
 
-            _totalUnbackedTokens = (totalUnbackedTokens = totalAmountOut - balance);
+            $.totalUnbackedTokens = (totalUnbackedTokens = totalAmountOut - balance);
         } else {
             amountToSend = totalAmountOut;
 
-            if (totalUnbackedTokens > 0) _totalUnbackedTokens = 0;
+            if (totalUnbackedTokens > 0) $.totalUnbackedTokens = 0;
         }
 
         if (actualAmountOut < expectedAmountOut || totalUnbackedTokens > 0) {
@@ -269,7 +294,7 @@ abstract contract L1BaseSyncPool is OAppReceiver, ReentrancyGuard, IL1SyncPool {
             emit Fee(originEid, guid, actualAmountOut, expectedAmountOut);
         }
 
-        SafeERC20.safeTransfer(tokenOut, _lockBox, amountToSend);
+        SafeERC20.safeTransfer(tokenOut, $.lockBox, amountToSend);
     }
 
     /**

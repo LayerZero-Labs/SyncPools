@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 import {IDummyToken} from "../interfaces/IDummyToken.sol";
 
@@ -15,21 +15,29 @@ import {IDummyToken} from "../interfaces/IDummyToken.sol";
  * to keep track of the actual ETH amount deposited on the L1 and L2, without any delay.
  * The dummy token will then be exchanged against the actual ETH when the ETH withdrawal is completed.
  */
-contract DummyToken is ERC20, AccessControl, IDummyToken {
+contract DummyTokenUpgradeable is ERC20Upgradeable, AccessControlUpgradeable, IDummyToken {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     uint8 private immutable _decimals;
 
     /**
      * @dev Constructor for DummyToken
-     * @param name_ The name of the token
-     * @param symbol_ The symbol of the token
      * @param decimals_ The number of decimals the token uses
      */
-    constructor(string memory name_, string memory symbol_, uint8 decimals_) ERC20(name_, symbol_) {
+    constructor(uint8 decimals_) {
         _decimals = decimals_;
+    }
 
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    /**
+     * @dev Initializes the contract
+     * @param name The name of the token
+     * @param symbol The symbol of the token
+     * @param owner The owner of the token
+     */
+    function initialize(string memory name, string memory symbol, address owner) external initializer {
+        __ERC20_init(name, symbol);
+
+        _grantRole(DEFAULT_ADMIN_ROLE, owner);
     }
 
     /**

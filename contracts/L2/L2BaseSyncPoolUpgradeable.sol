@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {OAppSender, OAppCore} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppSender.sol";
+import {
+    OAppSenderUpgradeable,
+    OAppCoreUpgradeable
+} from "@layerzerolabs/lz-evm-oapp-v2/contracts-upgradeable/oapp/OAppSenderUpgradeable.sol";
+import {OAppOptionsType3Upgradeable} from
+    "@layerzerolabs/lz-evm-oapp-v2/contracts-upgradeable/oapp/libs/OAppOptionsType3Upgradeable.sol";
 import {
     MessagingFee,
     MessagingReceipt
 } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
-import {OAppOptionsType3} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OAppOptionsType3.sol";
 
 import {IL2ExchangeRateProvider} from "../interfaces/IL2ExchangeRateProvider.sol";
 import {IL2SyncPool} from "../interfaces/IL2SyncPool.sol";
@@ -25,7 +29,44 @@ import {Constants} from "../libraries/Constants.sol";
  * The L2 sync pool takes care of deposits on the L2 and syncing to the L1 using the L1 sync pool.
  * Once enough tokens have been deposited, anyone can trigger a sync to Layer 1.
  */
-abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuard, IL2SyncPool {
+abstract contract L2BaseSyncPoolUpgradeable is
+    OAppSenderUpgradeable,
+    OAppOptionsType3Upgradeable,
+    ReentrancyGuardUpgradeable,
+    IL2SyncPool
+{
+    struct L2BaseSyncPoolStorage {
+        IL2ExchangeRateProvider l2ExchangeRateProvider;
+        IRateLimiter rateLimiter;
+        address tokenOut;
+        uint32 dstEid;
+        mapping(address => Token) tokens;
+    }
+
+    /**
+     * @dev Token data
+     * @param unsyncedAmountIn Amount of tokens deposited on Layer 2
+     * @param unsyncedAmountOut Amount of tokens minted on Layer 2
+     * @param minSyncAmount Minimum amount of tokens required to sync
+     * @param l1Address Address of the token on Layer 1, address(0) is unauthorized
+     */
+    struct Token {
+        uint256 unsyncedAmountIn;
+        uint256 unsyncedAmountOut;
+        uint256 minSyncAmount;
+        address l1Address;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256(syncpools.storage.l2basesyncpool)) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant L2BaseSyncPoolStorageLocation =
+        0x4b36603b35af025fe7f5b305ecc1a13c2c1ca8257f1efc0a04a9ab3253595100;
+
+    function _getL2BaseSyncPoolStorage() internal pure returns (L2BaseSyncPoolStorage storage $) {
+        assembly {
+            $.slot := L2BaseSyncPoolStorageLocation
+        }
+    }
+
     error L2BaseSyncPool__ZeroAmount();
     error L2BaseSyncPool__InsufficientAmountOut();
     error L2BaseSyncPool__InsufficientAmountToSync();
@@ -42,45 +83,37 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
     event Sync(uint32 dstEid, address indexed tokenIn, uint256 amountIn, uint256 amountOut);
 
     /**
-     * @dev Token data
-     * @param unsyncedAmountIn Amount of tokens deposited on Layer 2
-     * @param unsyncedAmountOut Amount of tokens minted on Layer 2
-     * @param minSyncAmount Minimum amount of tokens required to sync
-     * @param l1Address Address of the token on Layer 1, address(0) is unauthorized
+     * @dev Constructor for L2 Base Sync Pool
+     * @param endpoint Address of the LayerZero endpoint
      */
-    struct Token {
-        uint256 unsyncedAmountIn;
-        uint256 unsyncedAmountOut;
-        uint256 minSyncAmount;
-        address l1Address;
-    }
-
-    IL2ExchangeRateProvider private _l2ExchangeRateProvider;
-    IRateLimiter private _rateLimiter;
-
-    address private _tokenOut;
-
-    uint32 private _dstEid;
-
-    mapping(address => Token) private _tokens;
+    constructor(address endpoint) OAppCoreUpgradeable(endpoint) {}
 
     /**
-     * @dev Constructor for L2 Base Sync Pool
+     * @dev Initialize the L2 Base Sync Pool
      * @param l2ExchangeRateProvider Address of the exchange rate provider
      * @param rateLimiter Address of the rate limiter
      * @param tokenOut Address of the token to mint on Layer 2
      * @param dstEid Destination endpoint ID (most of the time, the Layer 1 endpoint ID)
-     * @param endpoint Address of the LayerZero endpoint
-     * @param owner Address of the owner
+     * @param delegate Address of the delegate
      */
-    constructor(
+    function __L2BaseSyncPool_init(
         address l2ExchangeRateProvider,
         address rateLimiter,
         address tokenOut,
         uint32 dstEid,
-        address endpoint,
-        address owner
-    ) OAppCore(endpoint, owner) Ownable(owner) {
+        address delegate
+    ) internal initializer {
+        __ReentrancyGuard_init();
+        __OAppCore_init(delegate);
+        __L2BaseSyncPool_init_unchained(l2ExchangeRateProvider, rateLimiter, tokenOut, dstEid);
+    }
+
+    function __L2BaseSyncPool_init_unchained(
+        address l2ExchangeRateProvider,
+        address rateLimiter,
+        address tokenOut,
+        uint32 dstEid
+    ) internal initializer {
         _setL2ExchangeRateProvider(l2ExchangeRateProvider);
         _setRateLimiter(rateLimiter);
         _setTokenOut(tokenOut);
@@ -92,7 +125,8 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
      * @return l2ExchangeRateProvider Address of the exchange rate provider
      */
     function getL2ExchangeRateProvider() public view virtual returns (address) {
-        return address(_l2ExchangeRateProvider);
+        L2BaseSyncPoolStorage storage $ = _getL2BaseSyncPoolStorage();
+        return address($.l2ExchangeRateProvider);
     }
 
     /**
@@ -100,7 +134,8 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
      * @return rateLimiter Address of the rate limiter
      */
     function getRateLimiter() public view virtual returns (address) {
-        return address(_rateLimiter);
+        L2BaseSyncPoolStorage storage $ = _getL2BaseSyncPoolStorage();
+        return address($.rateLimiter);
     }
 
     /**
@@ -108,7 +143,8 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
      * @return tokenOut Address of the token to mint on Layer 2
      */
     function getTokenOut() public view virtual returns (address) {
-        return address(_tokenOut);
+        L2BaseSyncPoolStorage storage $ = _getL2BaseSyncPoolStorage();
+        return address($.tokenOut);
     }
 
     /**
@@ -116,7 +152,8 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
      * @return dstEid Destination endpoint ID
      */
     function getDstEid() public view virtual returns (uint32) {
-        return _dstEid;
+        L2BaseSyncPoolStorage storage $ = _getL2BaseSyncPoolStorage();
+        return $.dstEid;
     }
 
     /**
@@ -126,7 +163,8 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
      * @return token Token data
      */
     function getTokenData(address tokenIn) public view virtual returns (Token memory) {
-        return _tokens[tokenIn];
+        L2BaseSyncPoolStorage storage $ = _getL2BaseSyncPoolStorage();
+        return $.tokens[tokenIn];
     }
 
     /**
@@ -142,9 +180,10 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
         virtual
         returns (MessagingFee memory msgFee)
     {
-        Token storage token = _tokens[tokenIn];
+        L2BaseSyncPoolStorage storage $ = _getL2BaseSyncPoolStorage();
 
-        uint32 dstEid = _dstEid;
+        Token storage token = $.tokens[tokenIn];
+        uint32 dstEid = $.dstEid;
 
         (bytes memory message, bytes memory options) =
             _buildMessageAndOptions(dstEid, tokenIn, token.unsyncedAmountIn, token.unsyncedAmountOut, extraOptions);
@@ -175,20 +214,22 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
     {
         if (amountIn == 0) revert L2BaseSyncPool__ZeroAmount();
 
-        Token storage token = _tokens[tokenIn];
+        L2BaseSyncPoolStorage storage $ = _getL2BaseSyncPoolStorage();
+
+        Token storage token = $.tokens[tokenIn];
         if (token.l1Address == address(0)) revert L2BaseSyncPool__UnauthorizedToken();
 
         emit Deposit(tokenIn, amountIn, minAmountOut);
 
         _receiveTokenIn(tokenIn, amountIn);
 
-        amountOut = _l2ExchangeRateProvider.getConversionAmount(tokenIn, amountIn);
+        amountOut = $.l2ExchangeRateProvider.getConversionAmount(tokenIn, amountIn);
         if (amountOut < minAmountOut) revert L2BaseSyncPool__InsufficientAmountOut();
 
         token.unsyncedAmountIn += amountIn;
         token.unsyncedAmountOut += amountOut;
 
-        IRateLimiter rateLimiter = _rateLimiter;
+        IRateLimiter rateLimiter = $.rateLimiter;
         if (address(rateLimiter) != address(0)) rateLimiter.updateRateLimit(msg.sender, tokenIn, amountIn, amountOut);
 
         _sendTokenOut(msg.sender, amountOut);
@@ -217,7 +258,8 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
         nonReentrant
         returns (uint256 unsyncedAmountIn, uint256 unsyncedAmountOut)
     {
-        Token storage token = _tokens[tokenIn];
+        L2BaseSyncPoolStorage storage $ = _getL2BaseSyncPoolStorage();
+        Token storage token = $.tokens[tokenIn];
 
         address l1TokenIn = token.l1Address;
         if (l1TokenIn == address(0)) revert L2BaseSyncPool__UnauthorizedToken();
@@ -232,7 +274,7 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
         token.unsyncedAmountIn = 0;
         token.unsyncedAmountOut = 0;
 
-        uint32 dstEid = _dstEid;
+        uint32 dstEid = $.dstEid;
 
         emit Sync(dstEid, tokenIn, unsyncedAmountIn, unsyncedAmountOut);
 
@@ -296,7 +338,8 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
      * @param l2ExchangeRateProvider Address of the exchange rate provider
      */
     function _setL2ExchangeRateProvider(address l2ExchangeRateProvider) internal virtual {
-        _l2ExchangeRateProvider = IL2ExchangeRateProvider(l2ExchangeRateProvider);
+        L2BaseSyncPoolStorage storage $ = _getL2BaseSyncPoolStorage();
+        $.l2ExchangeRateProvider = IL2ExchangeRateProvider(l2ExchangeRateProvider);
 
         emit L2ExchangeRateProviderSet(l2ExchangeRateProvider);
     }
@@ -306,7 +349,8 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
      * @param rateLimiter Address of the rate limiter
      */
     function _setRateLimiter(address rateLimiter) internal virtual {
-        _rateLimiter = IRateLimiter(rateLimiter);
+        L2BaseSyncPoolStorage storage $ = _getL2BaseSyncPoolStorage();
+        $.rateLimiter = IRateLimiter(rateLimiter);
 
         emit RateLimiterSet(rateLimiter);
     }
@@ -316,7 +360,8 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
      * @param tokenOut Address of the token to mint on Layer 2
      */
     function _setTokenOut(address tokenOut) internal virtual {
-        _tokenOut = tokenOut;
+        L2BaseSyncPoolStorage storage $ = _getL2BaseSyncPoolStorage();
+        $.tokenOut = tokenOut;
 
         emit TokenOutSet(tokenOut);
     }
@@ -326,7 +371,8 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
      * @param dstEid Destination endpoint ID
      */
     function _setDstEid(uint32 dstEid) internal virtual {
-        _dstEid = dstEid;
+        L2BaseSyncPoolStorage storage $ = _getL2BaseSyncPoolStorage();
+        $.dstEid = dstEid;
 
         emit DstEidSet(dstEid);
     }
@@ -337,7 +383,8 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
      * @param minSyncAmount Minimum amount of tokens required to sync
      */
     function _setMinSyncAmount(address tokenIn, uint256 minSyncAmount) internal virtual {
-        _tokens[tokenIn].minSyncAmount = minSyncAmount;
+        L2BaseSyncPoolStorage storage $ = _getL2BaseSyncPoolStorage();
+        $.tokens[tokenIn].minSyncAmount = minSyncAmount;
 
         emit MinSyncAmountSet(tokenIn, minSyncAmount);
     }
@@ -348,7 +395,8 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
      * @param l1TokenIn Address of the token on Layer 1
      */
     function _setL1TokenIn(address l2TokenIn, address l1TokenIn) internal virtual {
-        _tokens[l2TokenIn].l1Address = l1TokenIn;
+        L2BaseSyncPoolStorage storage $ = _getL2BaseSyncPoolStorage();
+        $.tokens[l2TokenIn].l1Address = l1TokenIn;
 
         emit L1TokenInSet(l2TokenIn, l1TokenIn);
     }
@@ -421,6 +469,7 @@ abstract contract L2BaseSyncPool is OAppSender, OAppOptionsType3, ReentrancyGuar
      * @param amount Amount of tokens to send
      */
     function _sendTokenOut(address account, uint256 amount) internal virtual {
-        IMintableERC20(_tokenOut).mint(account, amount);
+        L2BaseSyncPoolStorage storage $ = _getL2BaseSyncPoolStorage();
+        IMintableERC20($.tokenOut).mint(account, amount);
     }
 }

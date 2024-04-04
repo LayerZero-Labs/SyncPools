@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 import {IL2ExchangeRateProvider} from "../interfaces/IL2ExchangeRateProvider.sol";
 import {Constants} from "../libraries/Constants.sol";
@@ -12,10 +12,14 @@ import {Constants} from "../libraries/Constants.sol";
  * The rates oracles are expected to all use the same quote token.
  * For example, if quote is ETH and token is worth 2 ETH, the rate should be 2e18.
  */
-abstract contract L2ExchangeRateProvider is Ownable, IL2ExchangeRateProvider {
-    error L2ExchangeRateProvider__DepositFeeExceedsMax();
-    error L2ExchangeRateProvider__OutdatedRate();
-    error L2ExchangeRateProvider__NoRateOracle();
+abstract contract L2ExchangeRateProviderUpgradeable is OwnableUpgradeable, IL2ExchangeRateProvider {
+    struct L2ExchangeRateProviderStorage {
+        /**
+         * @dev Mapping of token address to rate parameters
+         * All rate oracles are expected to return rates with the `18 + decimalsIn - decimalsOut` decimals
+         */
+        mapping(address => RateParameters) rateParameters;
+    }
 
     /**
      * @dev Rate parameters for a token
@@ -29,19 +33,25 @@ abstract contract L2ExchangeRateProvider is Ownable, IL2ExchangeRateProvider {
         uint32 freshPeriod;
     }
 
+    // keccak256(abi.encode(uint256(keccak256(syncpools.storage.l2exchangerateprovider)) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant L2ExchangeRateProviderStorageLocation =
+        0xe04a73ceb6eb109286b5315cfafd156065d9e3fbfa5269d3606a1b3095f3ad00;
+
+    function _getL2ExchangeRateProviderStorage() internal pure returns (L2ExchangeRateProviderStorage storage $) {
+        assembly {
+            $.slot := L2ExchangeRateProviderStorageLocation
+        }
+    }
+
+    error L2ExchangeRateProvider__DepositFeeExceedsMax();
+    error L2ExchangeRateProvider__OutdatedRate();
+    error L2ExchangeRateProvider__NoRateOracle();
+
     event RateParametersSet(address token, address rateOracle, uint64 depositFee, uint32 freshPeriod);
 
-    /**
-     * @dev Mapping of token address to rate parameters
-     * All rate oracles are expected to return rates with the `18 + decimalsIn - decimalsOut` decimals
-     */
-    mapping(address => RateParameters) private _rateParameters;
+    function __L2ExchangeRateProvider_init() internal onlyInitializing {}
 
-    /**
-     * @dev Constructor
-     * @param owner Owner address
-     */
-    constructor(address owner) Ownable(owner) {}
+    function __L2ExchangeRateProvider_init_unchained() internal onlyInitializing {}
 
     /**
      * @dev Get rate parameters for a token
@@ -49,7 +59,8 @@ abstract contract L2ExchangeRateProvider is Ownable, IL2ExchangeRateProvider {
      * @return parameters Rate parameters
      */
     function getRateParameters(address token) public view virtual returns (RateParameters memory parameters) {
-        return _rateParameters[token];
+        L2ExchangeRateProviderStorage storage $ = _getL2ExchangeRateProviderStorage();
+        return $.rateParameters[token];
     }
 
     /**
@@ -69,9 +80,10 @@ abstract contract L2ExchangeRateProvider is Ownable, IL2ExchangeRateProvider {
         override
         returns (uint256 amountOut)
     {
-        RateParameters storage rateParameters = _rateParameters[token];
+        L2ExchangeRateProviderStorage storage $ = _getL2ExchangeRateProviderStorage();
+        RateParameters storage rateParameters = $.rateParameters[token];
 
-        address rateOracle = _rateParameters[token].rateOracle;
+        address rateOracle = rateParameters.rateOracle;
 
         if (rateOracle == address(0)) revert L2ExchangeRateProvider__NoRateOracle();
 
@@ -117,7 +129,8 @@ abstract contract L2ExchangeRateProvider is Ownable, IL2ExchangeRateProvider {
     {
         if (depositFee > Constants.PRECISION) revert L2ExchangeRateProvider__DepositFeeExceedsMax();
 
-        _rateParameters[token] = RateParameters(rateOracle, depositFee, freshPeriod);
+        L2ExchangeRateProviderStorage storage $ = _getL2ExchangeRateProviderStorage();
+        $.rateParameters[token] = RateParameters(rateOracle, depositFee, freshPeriod);
 
         emit RateParametersSet(token, rateOracle, depositFee, freshPeriod);
     }

@@ -6,8 +6,8 @@ import {
     MessagingReceipt
 } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 
-import {BaseMessenger} from "../../utils/BaseMessenger.sol";
-import {L2BaseSyncPool} from "../L2BaseSyncPool.sol";
+import {BaseMessengerUpgradeable} from "../../utils/BaseMessengerUpgradeable.sol";
+import {L2BaseSyncPoolUpgradeable} from "../L2BaseSyncPoolUpgradeable.sol";
 import {ICrossDomainMessenger} from "../../interfaces/ICrossDomainMessenger.sol";
 import {Constants} from "../../libraries/Constants.sol";
 import {IL1Receiver} from "../../interfaces/IL1Receiver.sol";
@@ -17,28 +17,33 @@ import {IL1Receiver} from "../../interfaces/IL1Receiver.sol";
  * @dev A sync pool that only supports ETH on Mode L2
  * This contract allows to send ETH from L2 to L1 during the sync process
  */
-contract L2ModeSyncPoolETH is L2BaseSyncPool, BaseMessenger {
+contract L2ModeSyncPoolETHUpgradeable is L2BaseSyncPoolUpgradeable, BaseMessengerUpgradeable {
     error L2ModeSyncPoolETH__OnlyETH();
 
     /**
      * @dev Constructor for L2 Mode Sync Pool for ETH
-     * @param messenger The messenger contract address
+     * @param endpoint Address of the LayerZero endpoint
+     */
+    constructor(address endpoint) L2BaseSyncPoolUpgradeable(endpoint) {}
+
+    /**
+     * @dev Initialize the contract
      * @param l2ExchangeRateProvider Address of the exchange rate provider
      * @param rateLimiter Address of the rate limiter
      * @param tokenOut Address of the token to mint on Layer 2
      * @param dstEid Destination endpoint ID (most of the time, the Layer 1 endpoint ID)
-     * @param endpoint Address of the LayerZero endpoint
-     * @param owner Address of the owner
+     * @param delegate Address of the owner
      */
-    constructor(
-        address messenger,
+    function initialize(
         address l2ExchangeRateProvider,
         address rateLimiter,
         address tokenOut,
         uint32 dstEid,
-        address endpoint,
-        address owner
-    ) L2BaseSyncPool(l2ExchangeRateProvider, rateLimiter, tokenOut, dstEid, endpoint, owner) BaseMessenger(messenger) {}
+        address delegate
+    ) external initializer {
+        __L2BaseSyncPool_init(l2ExchangeRateProvider, rateLimiter, tokenOut, dstEid, delegate);
+        __Ownable_init(delegate);
+    }
 
     /**
      * @dev Only allows ETH to be received
