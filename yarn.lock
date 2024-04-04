@@ -17,6 +17,11 @@
   resolved "https://registry.yarnpkg.com/@layerzerolabs/lz-evm-protocol-v2/-/lz-evm-protocol-v2-2.1.27.tgz#7f2ec78af67fe66cd75a7eb90aa37329417e2605"
   integrity sha512-kJlPYILW/VLxeeWagFYJpP/4EFeCw7Yuqp+qpv/+lnGDSXflvanGVnCApBJtEmirMva4E0nEkTFd0x9rfu/1Dg==
 
+"@openzeppelin/contracts-upgradeable@^5.0.2":
+  version "5.0.2"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts-upgradeable/-/contracts-upgradeable-5.0.2.tgz#3e5321a2ecdd0b206064356798c21225b6ec7105"
+  integrity sha512-0MmkHSHiW2NRFiT9/r5Lu4eJq5UJ4/tzlOgYXNAIj/ONkQTVnz22pLxDvp4C4uZ9he7ZFvGn3Driptn1/iU7tQ==
+
 "@openzeppelin/contracts@^5.0.1":
   version "5.0.2"
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-5.0.2.tgz#b1d03075e49290d06570b2fd42154d76c2a5d210"
@@ -25,3 +30,7 @@
 "forge-std@github:foundry-rs/forge-std#v1.8.1":
   version "1.7.6"
   resolved "https://codeload.github.com/foundry-rs/forge-std/tar.gz/bb4ceea94d6f10eeb5b41dc2391c6c8bf8e734ef"
+
+"layerzero-v2@github:JorgeAtPaladin/LayerZero-v2#lz-upgrade":
+  version "2.0.2"
+  resolved "https://codeload.github.com/JorgeAtPaladin/LayerZero-v2/tar.gz/21ad027cf323c323619566d2c9d1f2fa404f021f"
