@@ -15,7 +15,7 @@ contract L1LineaReceiverETHUpgradeable is L1BaseReceiverUpgradeable {
     error L1LineaReceiverETH__OnlyETH();
 
     /**
-     * @dev Initializer for L1 Mode Receiver ETH
+     * @dev Initializer for L1 Linea Receiver ETH
      * @param l1SyncPool Address of the L1 sync pool
      * @param messenger Address of the messenger contract
      * @param owner Address of the owner
