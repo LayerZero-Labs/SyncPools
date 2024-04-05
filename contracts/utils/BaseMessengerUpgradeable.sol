@@ -9,7 +9,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
  */
 abstract contract BaseMessengerUpgradeable is OwnableUpgradeable {
     struct BaseMessengerStorage {
-        address basemessenger;
+        address messenger;
     }
 
     // keccak256(abi.encode(uint256(keccak256(syncpools.storage.basemessenger)) - 1)) & ~bytes32(uint256(0xff))
@@ -38,7 +38,7 @@ abstract contract BaseMessengerUpgradeable is OwnableUpgradeable {
      */
     function getMessenger() public view virtual returns (address) {
         BaseMessengerStorage storage $ = _getBaseMessengerStorage();
-        return $.basemessenger;
+        return $.messenger;
     }
 
     /**
@@ -55,7 +55,7 @@ abstract contract BaseMessengerUpgradeable is OwnableUpgradeable {
      */
     function _setMessenger(address messenger) internal {
         BaseMessengerStorage storage $ = _getBaseMessengerStorage();
-        $.basemessenger = messenger;
+        $.messenger = messenger;
 
         emit MessengerSet(messenger);
     }
