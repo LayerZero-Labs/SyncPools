@@ -71,6 +71,7 @@ contract L2LineaSyncPoolETHUpgradeable is
      * @dev Internal function to sync tokens to L1
      * This will send an additional message to the messenger contract after the LZ message
      * This message will contain the ETH that the LZ message anticipates to receive
+     * @dev The L2->L1 Linea bridge expects a non-zero fee that has to be added in the msg.value of this message
      * @param dstEid Destination endpoint ID
      * @param l1TokenIn Address of the token on Layer 1
      * @param amountIn Amount of tokens deposited on Layer 2
@@ -103,8 +104,21 @@ contract L2LineaSyncPoolETHUpgradeable is
         bytes memory data = abi.encode(originEid, receipt.guid, l1TokenIn, amountIn, amountOut);
         bytes memory message = abi.encodeWithSelector(IL1Receiver.onMessageReceived.selector, data);
 
-        IMessageService(messenger).sendMessage{value: amountIn}(receiver, 0, message);
+        uint256 messageServiceFee = msg.value - fee.nativeFee;
+        IMessageService(messenger).sendMessage{value: amountIn + messageServiceFee}(
+            receiver, messageServiceFee, message
+        );
 
         return receipt;
+    }
+
+    /**
+     * @dev Internal function to pay the native fee associated with the message.
+     * @param _nativeFee The native fee to be paid.
+     * @return nativeFee The amount of native currency paid.
+     */
+    function _payNative(uint256 _nativeFee) internal override returns (uint256 nativeFee) {
+        if (msg.value < _nativeFee) revert NotEnoughNative(msg.value);
+        return _nativeFee;
     }
 }
