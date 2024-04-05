@@ -102,7 +102,7 @@ abstract contract L2BaseSyncPoolUpgradeable is
         address tokenOut,
         uint32 dstEid,
         address delegate
-    ) internal initializer {
+    ) internal onlyInitializing {
         __ReentrancyGuard_init();
         __OAppCore_init(delegate);
         __L2BaseSyncPool_init_unchained(l2ExchangeRateProvider, rateLimiter, tokenOut, dstEid);
@@ -113,7 +113,7 @@ abstract contract L2BaseSyncPoolUpgradeable is
         address rateLimiter,
         address tokenOut,
         uint32 dstEid
-    ) internal initializer {
+    ) internal onlyInitializing {
         _setL2ExchangeRateProvider(l2ExchangeRateProvider);
         _setRateLimiter(rateLimiter);
         _setTokenOut(tokenOut);

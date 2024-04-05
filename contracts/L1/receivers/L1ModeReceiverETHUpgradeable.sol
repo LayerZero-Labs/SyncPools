@@ -11,7 +11,7 @@ import {Constants} from "../../libraries/Constants.sol";
  * @dev This contract receives messages from the L2 messenger and forwards them to the L1 sync pool
  * It only supports ETH
  */
-contract L1ModeReceiverETH is L1BaseReceiverUpgradeable {
+contract L1ModeReceiverETHUpgradeable is L1BaseReceiverUpgradeable {
     error L1ModeReceiverETH__OnlyETH();
 
     /**

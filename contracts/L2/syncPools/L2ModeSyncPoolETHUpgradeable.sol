@@ -37,6 +37,8 @@ contract L2ModeSyncPoolETHUpgradeable is
      * @param rateLimiter Address of the rate limiter
      * @param tokenOut Address of the token to mint on Layer 2
      * @param dstEid Destination endpoint ID (most of the time, the Layer 1 endpoint ID)
+     * @param messenger Address of the messenger contract (most of the time, the L2 native bridge address)
+     * @param receiver Address of the receiver contract (most of the time, the L1 receiver contract)
      * @param delegate Address of the owner
      */
     function initialize(
@@ -44,9 +46,13 @@ contract L2ModeSyncPoolETHUpgradeable is
         address rateLimiter,
         address tokenOut,
         uint32 dstEid,
+        address messenger,
+        address receiver,
         address delegate
     ) external initializer {
         __L2BaseSyncPool_init(l2ExchangeRateProvider, rateLimiter, tokenOut, dstEid, delegate);
+        __BaseMessenger_init(messenger);
+        __BaseReceiver_init(receiver);
         __Ownable_init(delegate);
     }
 
