@@ -7,6 +7,7 @@ import {
 } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 
 import {BaseMessengerUpgradeable} from "../../utils/BaseMessengerUpgradeable.sol";
+import {BaseReceiverUpgradeable} from "../../utils/BaseReceiverUpgradeable.sol";
 import {L2BaseSyncPoolUpgradeable} from "../L2BaseSyncPoolUpgradeable.sol";
 import {IMessageService} from "../../interfaces/IMessageService.sol";
 import {Constants} from "../../libraries/Constants.sol";
@@ -17,7 +18,11 @@ import {IL1Receiver} from "../../interfaces/IL1Receiver.sol";
  * @dev A sync pool that only supports ETH on Linea L2
  * This contract allows to send ETH from L2 to L1 during the sync process
  */
-contract L2LineaSyncPoolETHUpgradeable is L2BaseSyncPoolUpgradeable, BaseMessengerUpgradeable {
+contract L2LineaSyncPoolETHUpgradeable is
+    L2BaseSyncPoolUpgradeable,
+    BaseMessengerUpgradeable,
+    BaseReceiverUpgradeable
+{
     error L2LineaSyncPoolETH__OnlyETH();
 
     /**
@@ -81,7 +86,9 @@ contract L2LineaSyncPoolETHUpgradeable is L2BaseSyncPoolUpgradeable, BaseMesseng
             revert L2LineaSyncPoolETH__OnlyETH();
         }
 
-        address peer = address(uint160(uint256(_getPeerOrRevert(dstEid))));
+        address receiver = getReceiver();
+        address messenger = getMessenger();
+
         uint32 originEid = endpoint.eid();
 
         MessagingReceipt memory receipt =
@@ -90,7 +97,7 @@ contract L2LineaSyncPoolETHUpgradeable is L2BaseSyncPoolUpgradeable, BaseMesseng
         bytes memory data = abi.encode(originEid, receipt.guid, l1TokenIn, amountIn, amountOut);
         bytes memory message = abi.encodeWithSelector(IL1Receiver.onMessageReceived.selector, data);
 
-        IMessageService(getMessenger()).sendMessage{value: amountIn}(peer, 0, message);
+        IMessageService(messenger).sendMessage{value: amountIn}(receiver, 0, message);
 
         return receipt;
     }
