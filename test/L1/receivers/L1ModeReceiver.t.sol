@@ -7,12 +7,12 @@ import "../../TestHelper.sol";
 
 import "../../utils/MockSyncPool.sol";
 import "../../utils/MockModeBridge.sol";
-import "../../../contracts/examples/L1/receivers/L1ModeReceiver.sol";
+import "../../../contracts/examples/L1/receivers/L1ModeReceiverETH.sol";
 import "../../../contracts/L1/L1BaseReceiverUpgradeable.sol";
 import "../../../contracts/libraries/Constants.sol";
 
 contract L1ModeReceiverETHTest is TestHelper {
-    L1ModeReceiver public l1Receiver;
+    L1ModeReceiverETH public l1Receiver;
     MockSyncPool public syncPool;
     MockModeBridge public messenger;
 
@@ -25,9 +25,9 @@ contract L1ModeReceiverETHTest is TestHelper {
         syncPool = new MockSyncPool();
         messenger = new MockModeBridge();
 
-        l1Receiver = L1ModeReceiver(
+        l1Receiver = L1ModeReceiverETH(
             _deployProxy(
-                type(L1ModeReceiver).creationCode,
+                type(L1ModeReceiverETH).creationCode,
                 new bytes(0),
                 abi.encodeWithSelector(
                     L1ModeReceiverETHUpgradeable.initialize.selector,
