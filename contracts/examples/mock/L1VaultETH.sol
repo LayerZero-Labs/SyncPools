@@ -9,6 +9,10 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {Constants} from "../../libraries/Constants.sol";
 import {IL1Vault} from "./interfaces/IL1Vault.sol";
 
+/**
+ * This contract is not part of the syncpool, but serves as an example for the interaction
+ * between the syncpool and the vault.
+ */
 contract L1VaultETH is ERC4626, ReentrancyGuard, AccessControl, IL1Vault {
     using EnumerableSet for EnumerableSet.AddressSet;
 

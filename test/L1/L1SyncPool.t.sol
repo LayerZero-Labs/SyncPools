@@ -10,7 +10,7 @@ import "../TestHelper.sol";
 import "../utils/MockEndpoint.sol";
 import "../utils/MockERC20.sol";
 import "../../contracts/examples/L1/L1SyncPoolETH.sol";
-import "../../contracts/examples/L1/L1VaultETH.sol";
+import "../../contracts/examples/mock/L1VaultETH.sol";
 import "../../contracts/tokens/DummyTokenUpgradeable.sol";
 
 contract L1SyncPoolTest is TestHelper {

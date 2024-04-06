@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IDummyToken} from "../../interfaces/IDummyToken.sol";
 import {L1BaseSyncPoolUpgradeable, Constants} from "../../L1/L1BaseSyncPoolUpgradeable.sol";
-import {IL1Vault} from "./interfaces/IL1Vault.sol";
+import {IL1Vault} from "../mock/interfaces/IL1Vault.sol";
 
 contract L1SyncPoolETH is L1BaseSyncPoolUpgradeable {
     error L1SyncPoolETH__OnlyETH();
