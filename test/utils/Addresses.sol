@@ -22,6 +22,7 @@ struct L1Chain {
     address endpoint;
     address send302;
     address receive302;
+    address lzDvn;
 }
 
 contract Addresses {
@@ -55,6 +56,7 @@ contract Addresses {
         originEid: 30101,
         endpoint: 0x1a44076050125825900e736c501f859c50fE728c,
         send302: 0xbB2Ea70C9E858123480642Cf96acbcCE1372dCe1,
-        receive302: 0xc02Ab410f0734EFa3F14628780e6e695156024C2
+        receive302: 0xc02Ab410f0734EFa3F14628780e6e695156024C2,
+        lzDvn: 0x589dEDbD617e0CBcB916A9223F4d1300c294236b
     });
 }

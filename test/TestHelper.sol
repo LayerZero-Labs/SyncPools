@@ -48,6 +48,8 @@ contract TestHelper is Test, Addresses {
     {
         address implementation = _deployContract(bytecode, constructorArgs);
 
+        vm.label(implementation, "implementation");
+
         return address(new TransparentUpgradeableProxy(implementation, proxyAdmin, initializerArgs));
     }
 }
