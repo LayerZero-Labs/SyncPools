@@ -285,13 +285,13 @@ abstract contract L1BaseSyncPoolUpgradeable is OAppReceiverUpgradeable, Reentran
         } else {
             amountToSend = totalAmountOut;
 
-            if (totalUnbackedTokens > 0) $.totalUnbackedTokens = 0;
+            if (totalUnbackedTokens > 0) $.totalUnbackedTokens = (totalUnbackedTokens = 0);
         }
 
         if (actualAmountOut < expectedAmountOut || totalUnbackedTokens > 0) {
             emit InsufficientDeposit(originEid, guid, actualAmountOut, expectedAmountOut, totalUnbackedTokens);
         } else {
-            emit Fee(originEid, guid, actualAmountOut, expectedAmountOut);
+            emit Fee(originEid, guid, actualAmountOut, totalAmountOut);
         }
 
         SafeERC20.safeTransfer(tokenOut, $.lockBox, amountToSend);
