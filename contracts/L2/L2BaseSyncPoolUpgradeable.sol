@@ -244,6 +244,9 @@ abstract contract L2BaseSyncPoolUpgradeable is
      * Will revert if:
      * - The token is unauthorized (that is, the l1Address is address(0))
      * - The amount to sync is zero or less than the minSyncAmount
+     * @dev It is very important to listen for the Sync event to know when and how much tokens were synced
+     * especially if an action is required on another chain (for example, executing the message). If an action
+     * was required but was not executed, the tokens won't be sent to the L1.
      * @param tokenIn Address of the token
      * @param extraOptions Extra options for the messaging protocol
      * @param fee Messaging fee
