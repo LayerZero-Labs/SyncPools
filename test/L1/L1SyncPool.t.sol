@@ -54,12 +54,12 @@ contract L1SyncPoolTest is TestHelper {
             _deployProxy(
                 type(L1SyncPoolETH).creationCode,
                 abi.encode(address(endpoint)),
-                abi.encodeWithSelector(
-                    L1SyncPoolETH.initialize.selector,
-                    address(l1Vault),
+                abi.encodeCall(
+                    L1SyncPoolETH.initialize,
+                   ( address(l1Vault),
                     address(tokenOut),
                     address(lockBox),
-                    address(this)
+                    address(this))
                 )
             )
         );

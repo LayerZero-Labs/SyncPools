@@ -102,7 +102,7 @@ contract L2LineaSyncPoolETHUpgradeable is
             super._sync(dstEid, l2TokenIn, l1TokenIn, amountIn, amountOut, extraOptions, fee);
 
         bytes memory data = abi.encode(originEid, receipt.guid, l1TokenIn, amountIn, amountOut);
-        bytes memory message = abi.encodeWithSelector(IL1Receiver.onMessageReceived.selector, data);
+        bytes memory message = abi.encodeCall(IL1Receiver.onMessageReceived, data);
 
         uint256 messageServiceFee = msg.value - fee.nativeFee;
         IMessageService(messenger).sendMessage{value: amountIn + messageServiceFee}(

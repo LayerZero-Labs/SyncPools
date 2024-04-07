@@ -92,12 +92,12 @@ contract PlaygroundTest is TestHelper {
             address oftAdapter = _deployProxy(
                 type(MockOFTAdapter).creationCode,
                 abi.encode(vault, ETHEREUM.endpoint),
-                abi.encodeWithSelector(MockOFTAdapter.initialize.selector, address(this))
+                abi.encodeCall(MockOFTAdapter.initialize, address(this))
             );
             address syncPool = _deployProxy(
                 type(L1SyncPoolETH).creationCode,
                 abi.encode(ETHEREUM.endpoint),
-                abi.encodeWithSelector(L1SyncPoolETH.initialize.selector, vault, vault, oftAdapter, address(this))
+                abi.encodeCall(L1SyncPoolETH.initialize, (vault, vault, oftAdapter, address(this)))
             );
 
             ethereum.tokenIn = Constants.ETH_ADDRESS;
@@ -109,21 +109,17 @@ contract PlaygroundTest is TestHelper {
             address modeReceiver = _deployProxy(
                 type(L1ModeReceiverETH).creationCode,
                 new bytes(0),
-                abi.encodeWithSelector(
-                    L1ModeReceiverETHUpgradeable.initialize.selector,
-                    address(syncPool),
-                    address(MODE.L1messenger),
-                    address(this)
+                abi.encodeCall(
+                    L1ModeReceiverETHUpgradeable.initialize,
+                    (address(syncPool), address(MODE.L1messenger), address(this))
                 )
             );
             address lineaReceiver = _deployProxy(
                 type(L1LineaReceiverETH).creationCode,
                 new bytes(0),
-                abi.encodeWithSelector(
-                    L1LineaReceiverETHUpgradeable.initialize.selector,
-                    address(syncPool),
-                    address(LINEA.L1messenger),
-                    address(this)
+                abi.encodeCall(
+                    L1LineaReceiverETHUpgradeable.initialize,
+                    (address(syncPool), address(LINEA.L1messenger), address(this))
                 )
             );
 
@@ -133,16 +129,12 @@ contract PlaygroundTest is TestHelper {
             address modeDummyETH = _deployImmutableProxy(
                 type(DummyTokenUpgradeable).creationCode,
                 abi.encode(18),
-                abi.encodeWithSelector(
-                    DummyTokenUpgradeable.initialize.selector, "modeDummyETH", "modeETH", address(this)
-                )
+                abi.encodeCall(DummyTokenUpgradeable.initialize, ("modeDummyETH", "modeETH", address(this)))
             );
             address lineaDummyETH = _deployImmutableProxy(
                 type(DummyTokenUpgradeable).creationCode,
                 abi.encode(18),
-                abi.encodeWithSelector(
-                    DummyTokenUpgradeable.initialize.selector, "lineaDummyETH", "lineaETH", address(this)
-                )
+                abi.encodeCall(DummyTokenUpgradeable.initialize, ("lineaDummyETH", "lineaETH", address(this)))
             );
 
             ethereum.dummyETHs[CHAINS.MODE] = modeDummyETH;
@@ -164,12 +156,12 @@ contract PlaygroundTest is TestHelper {
             address rateProvider = _deployProxy(
                 type(L2ExchangeRateProvider).creationCode,
                 new bytes(0),
-                abi.encodeWithSelector(L2ExchangeRateProvider.initialize.selector, address(this))
+                abi.encodeCall(L2ExchangeRateProvider.initialize, address(this))
             );
             address oftToken = _deployImmutableProxy(
                 type(MintableOFTUpgradeable).creationCode,
                 abi.encode(MODE.endpoint),
-                abi.encodeWithSelector(MintableOFTUpgradeable.initialize.selector, "modeOFT", "OFT", address(this))
+                abi.encodeCall(MintableOFTUpgradeable.initialize, ("modeOFT", "OFT", address(this)))
             );
             address rateLimiter = _deployContract(type(MockRateLimiter).creationCode, new bytes(0));
             address rateOracle = _deployContract(type(MockOracle).creationCode, new bytes(0));
@@ -186,15 +178,17 @@ contract PlaygroundTest is TestHelper {
             address syncPool = _deployProxy(
                 type(L2ModeSyncPoolETHUpgradeable).creationCode,
                 abi.encode(ETHEREUM.endpoint),
-                abi.encodeWithSelector(
-                    L2ModeSyncPoolETHUpgradeable.initialize.selector,
-                    rateProvider,
-                    rateLimiter,
-                    oftToken,
-                    ETHEREUM.originEid,
-                    MODE.L2messenger,
-                    ethereum.receivers[CHAINS.MODE],
-                    address(this)
+                abi.encodeCall(
+                    L2ModeSyncPoolETHUpgradeable.initialize,
+                    (
+                        rateProvider,
+                        rateLimiter,
+                        oftToken,
+                        ETHEREUM.originEid,
+                        MODE.L2messenger,
+                        ethereum.receivers[CHAINS.MODE],
+                        address(this)
+                    )
                 )
             );
 
@@ -214,12 +208,12 @@ contract PlaygroundTest is TestHelper {
             address rateProvider = _deployProxy(
                 type(L2ExchangeRateProvider).creationCode,
                 new bytes(0),
-                abi.encodeWithSelector(L2ExchangeRateProvider.initialize.selector, address(this))
+                abi.encodeCall(L2ExchangeRateProvider.initialize, address(this))
             );
             address oftToken = _deployImmutableProxy(
                 type(MintableOFTUpgradeable).creationCode,
                 abi.encode(LINEA.endpoint),
-                abi.encodeWithSelector(MintableOFTUpgradeable.initialize.selector, "lineaOFT", "OFT", address(this))
+                abi.encodeCall(MintableOFTUpgradeable.initialize, ("lineaOFT", "OFT", address(this)))
             );
             address rateLimiter = _deployContract(type(MockRateLimiter).creationCode, new bytes(0));
             address rateOracle = _deployContract(type(MockOracle).creationCode, new bytes(0));
@@ -236,15 +230,17 @@ contract PlaygroundTest is TestHelper {
             address syncPool = _deployProxy(
                 type(L2LineaSyncPoolETHUpgradeable).creationCode,
                 abi.encode(ETHEREUM.endpoint),
-                abi.encodeWithSelector(
-                    L2LineaSyncPoolETHUpgradeable.initialize.selector,
-                    rateProvider,
-                    rateLimiter,
-                    oftToken,
-                    ETHEREUM.originEid,
-                    LINEA.L2messenger,
-                    ethereum.receivers[CHAINS.LINEA],
-                    address(this)
+                abi.encodeCall(
+                    L2LineaSyncPoolETHUpgradeable.initialize,
+                    (
+                        rateProvider,
+                        rateLimiter,
+                        oftToken,
+                        ETHEREUM.originEid,
+                        LINEA.L2messenger,
+                        ethereum.receivers[CHAINS.LINEA],
+                        address(this)
+                    )
                 )
             );
 
@@ -422,7 +418,7 @@ contract PlaygroundTest is TestHelper {
 
             bytes32 guid = 0x1898b42b4a72de6377cc270b97d75e5f277c7d8197631a64b486f87a70717a5b;
             bytes memory data = abi.encode(MODE.originEid, guid, mode.tokenIn, unsyncedAmountIn, unsyncedAmountOut);
-            modeDeposit.nativeMessage = abi.encodeWithSelector(IL1Receiver.onMessageReceived.selector, data);
+            modeDeposit.nativeMessage = abi.encodeCall(IL1Receiver.onMessageReceived, data);
 
             assertTrue(
                 _verifyEvents(entries, ILayerZeroEndpointV2.PacketSent.selector, modeDeposit.lzMessage),
@@ -454,7 +450,7 @@ contract PlaygroundTest is TestHelper {
 
             bytes32 guid = 0x7322e098c029c7ac8fe295d576fcbfc931f6c67386c52892021c4cc39afa9e37;
             bytes memory data = abi.encode(LINEA.originEid, guid, linea.tokenIn, unsyncedAmountIn, unsyncedAmountOut);
-            lineaDeposit.nativeMessage = abi.encodeWithSelector(IL1Receiver.onMessageReceived.selector, data);
+            lineaDeposit.nativeMessage = abi.encodeCall(IL1Receiver.onMessageReceived, data);
 
             assertTrue(
                 _verifyEvents(entries, ILayerZeroEndpointV2.PacketSent.selector, lineaDeposit.lzMessage),

@@ -20,7 +20,7 @@ contract MintableOFTUpgradeableTest is TestHelper {
             _deployProxy(
                 type(MintableOFTUpgradeable).creationCode,
                 abi.encode(ETHEREUM.endpoint),
-                abi.encodeWithSelector(MintableOFTUpgradeable.initialize.selector, "MintableOFT", "OFT", address(this))
+                abi.encodeCall(MintableOFTUpgradeable.initialize, ("MintableOFT", "OFT", address(this)))
             )
         );
     }

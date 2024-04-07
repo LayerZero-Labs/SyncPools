@@ -18,7 +18,7 @@ contract DummyTokenUpgradeableTest is TestHelper {
             _deployProxy(
                 type(DummyTokenUpgradeable).creationCode,
                 abi.encode(6),
-                abi.encodeWithSelector(DummyTokenUpgradeable.initialize.selector, "DummyToken", "DT", address(this))
+                abi.encodeCall(DummyTokenUpgradeable.initialize, ("DummyToken", "DT", address(this)))
             )
         );
     }

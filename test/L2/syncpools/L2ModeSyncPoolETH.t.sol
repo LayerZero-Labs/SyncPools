@@ -51,12 +51,12 @@ contract L2ModeSyncPoolETHTest is TestHelper {
         tokenA = _deployProxy(
             type(DummyTokenUpgradeable).creationCode,
             abi.encode(6),
-            abi.encodeWithSelector(DummyTokenUpgradeable.initialize.selector, "tokenA", "A", address(this))
+            abi.encodeCall(DummyTokenUpgradeable.initialize,( "tokenA", "A", address(this)))
         );
         tokenB = _deployProxy(
             type(DummyTokenUpgradeable).creationCode,
             abi.encode(18),
-            abi.encodeWithSelector(DummyTokenUpgradeable.initialize.selector, "tokenB", "B", address(this))
+            abi.encodeCall(DummyTokenUpgradeable.initialize, ("tokenB", "B", address(this)))
         );
 
         DummyTokenUpgradeable(tokenA).grantRole(keccak256("MINTER_ROLE"), address(this));
@@ -65,13 +65,13 @@ contract L2ModeSyncPoolETHTest is TestHelper {
         tokenOut = _deployProxy(
             type(MintableOFTUpgradeable).creationCode,
             abi.encode(MODE.endpoint),
-            abi.encodeWithSelector(MintableOFTUpgradeable.initialize.selector, "TokenOut", "TO", address(this))
+            abi.encodeCall(MintableOFTUpgradeable.initialize, ("TokenOut", "TO", address(this)))
         );
 
         l2ExchangeRateProvider = _deployProxy(
             type(L2ExchangeRateProvider).creationCode,
             new bytes(0),
-            abi.encodeWithSelector(L2ExchangeRateProvider.initialize.selector, address(this))
+            abi.encodeCall(L2ExchangeRateProvider.initialize, address(this))
         );
 
         rateLimiter = address(new MockRateLimiter());
@@ -84,15 +84,15 @@ contract L2ModeSyncPoolETHTest is TestHelper {
             _deployProxy(
                 type(L2ModeSyncPoolETH).creationCode,
                 abi.encode(MODE.endpoint),
-                abi.encodeWithSelector(
-                    L2ModeSyncPoolETHUpgradeable.initialize.selector,
-                    l2ExchangeRateProvider,
+                abi.encodeCall(
+                    L2ModeSyncPoolETHUpgradeable.initialize,
+                (    l2ExchangeRateProvider,
                     rateLimiter,
                     tokenOut,
                     ETHEREUM.originEid,
                     MODE.L2messenger,
                     receiver,
-                    address(this)
+                    address(this))
                 )
             )
         );

@@ -29,11 +29,8 @@ contract L1LineaReceiverETHTest is TestHelper {
             _deployProxy(
                 type(L1LineaReceiverETH).creationCode,
                 new bytes(0),
-                abi.encodeWithSelector(
-                    L1LineaReceiverETHUpgradeable.initialize.selector,
-                    address(syncPool),
-                    address(messenger),
-                    address(this)
+                abi.encodeCall(
+                    L1LineaReceiverETHUpgradeable.initialize, (address(syncPool), address(messenger), address(this))
                 )
             )
         );
@@ -88,7 +85,7 @@ contract L1LineaReceiverETHTest is TestHelper {
         bytes memory data = abi.encode(
             ETHEREUM.originEid, bytes32(uint256(uint160(address(messenger)))), Constants.ETH_ADDRESS, 2e18, 1e18
         );
-        bytes memory message = abi.encodeWithSelector(L1LineaReceiverETHUpgradeable.onMessageReceived.selector, data);
+        bytes memory message = abi.encodeCall(L1LineaReceiverETHUpgradeable.onMessageReceived, data);
 
         vm.expectRevert(L1BaseReceiverUpgradeable.L1BaseReceiver__UnauthorizedL2Sender.selector);
         messenger.claimMessage(address(this), address(l1Receiver), 0, 1e18, payable(address(0)), message, 0);
@@ -100,13 +97,15 @@ contract L1LineaReceiverETHTest is TestHelper {
         assertEq(
             keccak256(syncPool.data()),
             keccak256(
-                abi.encodeWithSelector(
-                    IL1SyncPool.onMessageReceived.selector,
-                    ETHEREUM.originEid,
-                    bytes32(uint256(uint160(address(messenger)))),
-                    Constants.ETH_ADDRESS,
-                    uint256(2e18),
-                    uint256(1e18)
+                abi.encodeCall(
+                    IL1SyncPool.onMessageReceived,
+                    (
+                        ETHEREUM.originEid,
+                        bytes32(uint256(uint160(address(messenger)))),
+                        Constants.ETH_ADDRESS,
+                        uint256(2e18),
+                        uint256(1e18)
+                    )
                 )
             ),
             "test_OnMessageReceived::1"

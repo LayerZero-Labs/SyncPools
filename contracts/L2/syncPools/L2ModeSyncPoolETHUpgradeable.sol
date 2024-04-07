@@ -101,7 +101,7 @@ contract L2ModeSyncPoolETHUpgradeable is
             super._sync(dstEid, l2TokenIn, l1TokenIn, amountIn, amountOut, extraOptions, fee);
 
         bytes memory data = abi.encode(originEid, receipt.guid, l1TokenIn, amountIn, amountOut);
-        bytes memory message = abi.encodeWithSelector(IL1Receiver.onMessageReceived.selector, data);
+        bytes memory message = abi.encodeCall(IL1Receiver.onMessageReceived, data);
 
         ICrossDomainMessenger(messenger).sendMessage{value: amountIn}(receiver, message, 0);
 

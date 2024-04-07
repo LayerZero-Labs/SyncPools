@@ -26,7 +26,7 @@ contract ExchangeRateProviderTest is TestHelper {
             _deployProxy(
                 type(L2ExchangeRateProvider).creationCode,
                 new bytes(0),
-                abi.encodeWithSelector(L2ExchangeRateProvider.initialize.selector, address(this))
+                abi.encodeCall(L2ExchangeRateProvider.initialize, address(this))
             )
         );
     }
