@@ -55,9 +55,9 @@ abstract contract L1BaseSyncPoolUpgradeable is OAppReceiverUpgradeable, Reentran
         bytes32 guid,
         uint256 actualAmountOut,
         uint256 expectedAmountOut,
-        uint256 totalUnbackedTokens
+        uint256 unbackedTokens
     );
-    event Fee(uint32 indexed originEid, bytes32 guid, uint256 actualAmountOut, uint256 expectedAmountOut);
+    event Fee(uint32 indexed originEid, bytes32 guid, uint256 actualAmountOut, uint256 expectedAmountOut, uint256 fee);
     event Sweep(address token, address receiver, uint256 amount);
 
     /**
@@ -276,26 +276,30 @@ abstract contract L1BaseSyncPoolUpgradeable is OAppReceiverUpgradeable, Reentran
         uint256 balance = tokenOut.balanceOf(address(this));
 
         uint256 totalAmountOut = expectedAmountOut + totalUnbackedTokens;
-        uint256 amountToSend = 0;
+        uint256 amountToSend;
 
         if (balance < totalAmountOut) {
             amountToSend = balance;
 
-            $.totalUnbackedTokens = (totalUnbackedTokens = totalAmountOut - balance);
+            $.totalUnbackedTokens = totalAmountOut - balance;
         } else {
             amountToSend = totalAmountOut;
 
-            if (totalUnbackedTokens > 0) $.totalUnbackedTokens = (totalUnbackedTokens = 0);
+            if (totalUnbackedTokens > 0) $.totalUnbackedTokens = 0;
         }
 
-        if (actualAmountOut < expectedAmountOut || totalUnbackedTokens > 0) {
-            emit InsufficientDeposit(originEid, guid, actualAmountOut, expectedAmountOut, totalUnbackedTokens);
+        if (actualAmountOut < expectedAmountOut) {
+            uint256 unbackedTokens = expectedAmountOut - actualAmountOut;
+            emit InsufficientDeposit(originEid, guid, actualAmountOut, expectedAmountOut, unbackedTokens);
         } else {
-            emit Fee(originEid, guid, actualAmountOut, totalAmountOut);
+            uint256 fee = actualAmountOut - expectedAmountOut;
+            emit Fee(originEid, guid, actualAmountOut, expectedAmountOut, fee);
         }
 
         SafeERC20.safeTransfer(tokenOut, $.lockBox, amountToSend);
     }
+
+    event Log(string message, uint256 value);
 
     /**
      * @dev Internal function to anticipate a deposit

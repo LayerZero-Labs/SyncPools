@@ -33,9 +33,9 @@ contract L1SyncPoolTest is TestHelper {
         bytes32 guid,
         uint256 actualAmountOut,
         uint256 expectedAmountOut,
-        uint256 totalUnbackedTokens
+        uint256 unbackedTokens
     );
-    event Fee(uint32 indexed originEid, bytes32 guid, uint256 actualAmountOut, uint256 expectedAmountOut);
+    event Fee(uint32 indexed originEid, bytes32 guid, uint256 actualAmountOut, uint256 expectedAmountOut, uint256 fee);
     event VaultSet(address Vault);
     event DummyTokenSet(uint32 originEid, address MockERC20);
 
@@ -194,7 +194,10 @@ contract L1SyncPoolTest is TestHelper {
         assertEq(user.balance, 1e18, "test_Sweep::9");
     }
 
-    function test_LzReceive() external {
+    function test_LzReceiveCase1() external {
+        uint256 amountIn = 1e18;
+        uint256 amountOut = 0.9e18;
+
         vm.expectRevert(abi.encodeWithSelector(OAppReceiverUpgradeable.OnlyEndpoint.selector, address(this)));
         l1SyncPool.lzReceive(Origin(0, 0, 0), 0, "", address(0), "");
 
@@ -214,7 +217,7 @@ contract L1SyncPoolTest is TestHelper {
         vm.expectRevert(L1SyncPoolETH.L1SyncPoolETH__OnlyETH.selector);
         l1SyncPool.lzReceive(Origin(MODE.originEid, peer, 0), 0, abi.encode(tokenA, 0, 0), address(0), "");
 
-        bytes memory message = abi.encode(Constants.ETH_ADDRESS, 1e18, 0.9e18);
+        bytes memory message = abi.encode(Constants.ETH_ADDRESS, amountIn, amountOut);
 
         vm.prank(address(endpoint));
         vm.expectRevert(L1SyncPoolETH.L1SyncPoolETH__UnsetDummyToken.selector);
@@ -244,44 +247,135 @@ contract L1SyncPoolTest is TestHelper {
 
         uint256 lockBoxBalance = IERC20(tokenOut).balanceOf(lockBox);
 
-        uint256 actualAmountOut = l1Vault.previewDeposit(1e18);
+        uint256 actualAmountOut = l1Vault.previewDeposit(amountIn);
 
         vm.expectEmit(true, true, true, true);
-        emit Fee(MODE.originEid, 0, actualAmountOut, 0.9e18);
+        emit Fee(MODE.originEid, 0, actualAmountOut, amountOut, actualAmountOut - amountOut);
 
         vm.prank(address(endpoint));
         l1SyncPool.lzReceive(Origin(MODE.originEid, peer, 0), 0, message, address(0), "");
 
-        assertEq(l1SyncPool.getTotalUnbackedTokens(), 0, "test_LzReceive::1");
-        assertEq(IERC20(tokenOut).balanceOf(lockBox), lockBoxBalance + 0.9e18, "test_LzReceive::2");
-        assertEq(IERC20(tokenOut).balanceOf(address(l1SyncPool)), actualAmountOut - 0.9e18, "test_LzReceive::3");
+        assertEq(l1SyncPool.getTotalUnbackedTokens(), 0, "test_LzReceiveCase1::1");
+        assertEq(IERC20(tokenOut).balanceOf(lockBox), lockBoxBalance + amountOut, "test_LzReceiveCase1::2");
+        assertEq(IERC20(tokenOut).balanceOf(address(l1SyncPool)), actualAmountOut - amountOut, "test_LzReceiveCase1::3");
 
-        message = abi.encode(Constants.ETH_ADDRESS, 1e18, 1e18);
+        uint256 amountOut2 = 1e18;
+
+        message = abi.encode(Constants.ETH_ADDRESS, amountIn, amountOut2);
 
         vm.expectEmit(true, true, true, true);
-        emit InsufficientDeposit(MODE.originEid, 0, actualAmountOut, 1e18, 0); // the previous fee will cover the deviation
+        emit InsufficientDeposit(MODE.originEid, 0, actualAmountOut, amountOut2, amountOut2 - actualAmountOut); // the previous fee will cover the deviation
 
         vm.prank(address(endpoint));
         l1SyncPool.lzReceive(Origin(MODE.originEid, peer, 0), 0, message, address(0), "");
 
-        uint256 expectedBalance = (actualAmountOut - 0.9e18) - (1e18 - actualAmountOut);
+        uint256 expectedBalance = (actualAmountOut - amountOut) - (amountOut2 - actualAmountOut);
 
-        assertEq(l1SyncPool.getTotalUnbackedTokens(), 0, "test_LzReceive::4");
-        assertEq(IERC20(tokenOut).balanceOf(lockBox), lockBoxBalance + 0.9e18 + 1e18, "test_LzReceive::5");
-        assertEq(IERC20(tokenOut).balanceOf(address(l1SyncPool)), expectedBalance, "test_LzReceive::6");
+        assertEq(l1SyncPool.getTotalUnbackedTokens(), 0, "test_LzReceiveCase1::4");
+        assertEq(IERC20(tokenOut).balanceOf(lockBox), lockBoxBalance + amountOut + amountOut2, "test_LzReceiveCase1::5");
+        assertEq(IERC20(tokenOut).balanceOf(address(l1SyncPool)), expectedBalance, "test_LzReceiveCase1::6");
 
-        message = abi.encode(Constants.ETH_ADDRESS, 1e18, 2e18);
+        uint256 amountOut3 = 2e18;
+
+        message = abi.encode(Constants.ETH_ADDRESS, amountIn, amountOut3);
 
         vm.expectEmit(true, true, true, true);
-        emit InsufficientDeposit(MODE.originEid, 0, actualAmountOut, 2e18, (0.9e18 + 1e18 + 2e18) - 3 * actualAmountOut);
+        emit InsufficientDeposit(MODE.originEid, 0, actualAmountOut, amountOut3, amountOut3 - actualAmountOut);
 
         vm.prank(address(endpoint));
         l1SyncPool.lzReceive(Origin(MODE.originEid, peer, 0), 0, message, address(0), "");
 
-        assertGt(l1SyncPool.getTotalUnbackedTokens(), 0, "test_LzReceive::7");
-        assertEq(l1SyncPool.getTotalUnbackedTokens(), (0.9e18 + 1e18 + 2e18) - 3 * actualAmountOut, "test_LzReceive::8");
-        assertEq(IERC20(tokenOut).balanceOf(lockBox), lockBoxBalance + 3 * actualAmountOut, "test_LzReceive::9");
-        assertEq(IERC20(tokenOut).balanceOf(address(l1SyncPool)), 0, "test_LzReceive::10");
+        assertGt(l1SyncPool.getTotalUnbackedTokens(), 0, "test_LzReceiveCase1::7");
+        assertEq(
+            l1SyncPool.getTotalUnbackedTokens(),
+            (amountOut + amountOut2 + amountOut3) - 3 * actualAmountOut,
+            "test_LzReceiveCase1::8"
+        );
+        assertEq(IERC20(tokenOut).balanceOf(lockBox), lockBoxBalance + 3 * actualAmountOut, "test_LzReceiveCase1::9");
+        assertEq(IERC20(tokenOut).balanceOf(address(l1SyncPool)), 0, "test_LzReceiveCase1::10");
+    }
+
+    function test_LzReceiveCase2() external {
+        uint256 amountIn = 1e18;
+        uint256 amountOut = 1e18 - 1;
+
+        bytes32 peer = bytes32(uint256(uint160(makeAddr("peer"))));
+
+        l1SyncPool.setPeer(LINEA.originEid, peer);
+
+        bytes memory message = abi.encode(Constants.ETH_ADDRESS, amountIn, amountOut);
+
+        DummyTokenUpgradeable(tokenA).grantRole(keccak256("MINTER_ROLE"), address(l1SyncPool));
+
+        l1SyncPool.setDummyToken(LINEA.originEid, tokenA);
+
+        l1Vault.grantRole(keccak256("SYNC_POOL_ROLE"), address(l1SyncPool));
+
+        l1Vault.addDummyETH(address(tokenA));
+
+        uint256 lockBoxBalance = IERC20(tokenOut).balanceOf(lockBox);
+
+        uint256 actualAmountOut = l1Vault.previewDeposit(amountIn);
+
+        vm.expectEmit(true, true, true, true);
+        emit InsufficientDeposit(LINEA.originEid, 0, actualAmountOut, amountOut, amountOut - actualAmountOut);
+
+        vm.prank(address(endpoint));
+        l1SyncPool.lzReceive(Origin(LINEA.originEid, peer, 0), 0, message, address(0), "");
+
+        assertGt(l1SyncPool.getTotalUnbackedTokens(), 0, "test_LzReceiveCase2::1");
+        assertEq(l1SyncPool.getTotalUnbackedTokens(), amountOut - actualAmountOut, "test_LzReceiveCase2::2");
+        assertEq(IERC20(tokenOut).balanceOf(lockBox), lockBoxBalance + actualAmountOut, "test_LzReceiveCase2::3");
+        assertEq(IERC20(tokenOut).balanceOf(address(l1SyncPool)), 0, "test_LzReceiveCase2::4");
+
+        uint256 amountIn2 = 1.05e18;
+        uint256 amountOut2 = 1e18;
+        uint256 actualAmountOut2 = l1Vault.previewDeposit(amountIn2);
+
+        message = abi.encode(Constants.ETH_ADDRESS, amountIn2, amountOut2);
+
+        vm.expectEmit(true, true, true, true);
+        emit Fee(LINEA.originEid, 0, actualAmountOut2, amountOut2, actualAmountOut2 - amountOut2);
+
+        vm.prank(address(endpoint));
+        l1SyncPool.lzReceive(Origin(LINEA.originEid, peer, 0), 0, message, address(0), "");
+
+        assertGt(l1SyncPool.getTotalUnbackedTokens(), 0, "test_LzReceiveCase2::5");
+        assertEq(
+            l1SyncPool.getTotalUnbackedTokens(),
+            amountOut + amountOut2 - actualAmountOut - actualAmountOut2,
+            "test_LzReceiveCase2::6"
+        );
+        assertEq(
+            IERC20(tokenOut).balanceOf(lockBox),
+            lockBoxBalance + actualAmountOut + actualAmountOut2,
+            "test_LzReceiveCase2::7"
+        );
+        assertEq(IERC20(tokenOut).balanceOf(address(l1SyncPool)), 0, "test_LzReceiveCase2::8");
+
+        uint256 amountIn3 = 10e18;
+        uint256 amountOut3 = 1e18;
+        uint256 actualAmountOut3 = l1Vault.previewDeposit(amountIn3);
+
+        message = abi.encode(Constants.ETH_ADDRESS, amountIn3, amountOut3);
+
+        vm.expectEmit(true, true, true, true);
+        emit Fee(LINEA.originEid, 0, actualAmountOut3, amountOut3, actualAmountOut3 - amountOut3);
+
+        vm.prank(address(endpoint));
+        l1SyncPool.lzReceive(Origin(LINEA.originEid, peer, 0), 0, message, address(0), "");
+
+        assertEq(l1SyncPool.getTotalUnbackedTokens(), 0, "test_LzReceiveCase2::9");
+        assertEq(
+            IERC20(tokenOut).balanceOf(lockBox),
+            lockBoxBalance + amountOut + amountOut2 + amountOut3,
+            "test_LzReceiveCase2::10"
+        );
+        assertEq(
+            IERC20(tokenOut).balanceOf(address(l1SyncPool)),
+            actualAmountOut + actualAmountOut2 + actualAmountOut3 - (amountOut + amountOut2 + amountOut3),
+            "test_LzReceiveCase2::11"
+        );
     }
 
     function test_OnMessageReceived() public {
