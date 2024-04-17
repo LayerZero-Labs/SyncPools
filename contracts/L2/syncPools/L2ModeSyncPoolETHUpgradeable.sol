@@ -103,8 +103,19 @@ contract L2ModeSyncPoolETHUpgradeable is
         bytes memory data = abi.encode(originEid, receipt.guid, l1TokenIn, amountIn, amountOut);
         bytes memory message = abi.encodeCall(IL1Receiver.onMessageReceived, data);
 
-        ICrossDomainMessenger(messenger).sendMessage{value: amountIn}(receiver, message, 0);
+        ICrossDomainMessenger(messenger).sendMessage{value: amountIn}(receiver, message, _minGasLimit());
 
         return receipt;
+    }
+
+    /**
+     * @dev Internal function to get the minimum gas limit
+     * This function should be overridden to set a minimum gas limit to forward during the execution of the message
+     * by the L1 receiver contract. This is mostly needed if the underlying contract have some try/catch mechanism
+     * as this could be abused by gas-griefing attacks.
+     * @return minGasLimit Minimum gas limit
+     */
+    function _minGasLimit() internal view virtual returns (uint32) {
+        return 0;
     }
 }
