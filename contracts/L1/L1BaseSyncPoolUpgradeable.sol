@@ -300,8 +300,6 @@ abstract contract L1BaseSyncPoolUpgradeable is OAppReceiverUpgradeable, Reentran
         SafeERC20.safeTransfer(tokenOut, $.lockBox, amountToSend);
     }
 
-    event Log(string message, uint256 value);
-
     /**
      * @dev Internal function to anticipate a deposit
      * @param originEid Origin EID
