@@ -477,7 +477,7 @@ contract PlaygroundTest is TestHelper {
             vm.deal(ETHEREUM.endpoint, modeDeposit.amountIn);
 
             vm.prank(ETHEREUM.endpoint);
-            L1SyncPoolETH(ethereum.syncPool).lzReceive{value: modeDeposit.amountIn}(
+            L1SyncPoolETH(ethereum.syncPool).lzReceive(
                 Origin(MODE.originEid, bytes32(uint256(uint160(address(mode.syncPool)))), 0),
                 bytes32(0),
                 modeDeposit.lzMessage,
@@ -522,7 +522,7 @@ contract PlaygroundTest is TestHelper {
             vm.deal(ETHEREUM.endpoint, lineaDeposit.amountIn);
 
             vm.prank(ETHEREUM.endpoint);
-            L1SyncPoolETH(ethereum.syncPool).lzReceive{value: lineaDeposit.amountIn}(
+            L1SyncPoolETH(ethereum.syncPool).lzReceive(
                 Origin(LINEA.originEid, bytes32(uint256(uint160(address(linea.syncPool)))), 0),
                 bytes32(0),
                 lineaDeposit.lzMessage,

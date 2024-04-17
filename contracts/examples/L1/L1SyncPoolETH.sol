@@ -154,8 +154,10 @@ contract L1SyncPoolETH is L1BaseSyncPoolUpgradeable {
 
         if (address(dummyToken) == address(0)) revert L1SyncPoolETH__UnsetDummyToken();
 
-        uint256 balance = dummyToken.balanceOf(address(vault));
-        uint256 swapAmount = msg.value > balance ? balance : msg.value;
+        uint256 dummyBalance = dummyToken.balanceOf(address(vault));
+        uint256 ethBalance = address(this).balance;
+
+        uint256 swapAmount = ethBalance > dummyBalance ? dummyBalance : ethBalance;
 
         vault.swapDummyETH{value: swapAmount}(address(dummyToken), swapAmount);
 
