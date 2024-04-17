@@ -67,6 +67,7 @@ abstract contract L1BaseSyncPoolUpgradeable is OAppReceiverUpgradeable, Reentran
     constructor(address endpoint) OAppCoreUpgradeable(endpoint) {}
 
     function __L1BaseSyncPool_init(address tokenOut, address lockBox, address delegate) internal onlyInitializing {
+        __ReentrancyGuard_init();
         __OAppCore_init(delegate);
         __L1BaseSyncPool_init_unchained(tokenOut, lockBox);
     }
