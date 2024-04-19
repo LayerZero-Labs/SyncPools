@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LZBL-1.2
 pragma solidity ^0.8.19;
 
 interface IMessageService {

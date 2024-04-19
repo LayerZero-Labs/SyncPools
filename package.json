@@ -2,7 +2,7 @@
   "name": "syncpools",
   "version": "1.0.0",
   "author": "Jorge Paladin <jorge@paladinsec.co>",
-  "license": "MIT",
+  "license": "LZBL-1.2",
   "devDependencies": {
     "forge-std": "github:foundry-rs/forge-std#v1.8.1",
     "layerzero-v2": "github:JorgeAtPaladin/LayerZero-v2#lz-upgrade"
