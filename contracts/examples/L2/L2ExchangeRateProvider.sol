@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: LZBL-1.2
 pragma solidity ^0.8.20;
 
 import {L2ExchangeRateProviderUpgradeable} from "../../L2/L2ExchangeRateProviderUpgradeable.sol";

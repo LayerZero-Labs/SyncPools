@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: LZBL-1.2
 pragma solidity ^0.8.20;
 
 // @dev careful here, older OZ version doesn't deploy the ProxyAdmin contract by default and the send would be
