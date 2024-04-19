@@ -2,8 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {OFT} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/OFT.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {OFTUpgradeable} from "@layerzerolabs/lz-evm-oapp-v2/contracts-upgradeable/oft/OFTUpgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 import {IMintableERC20} from "../interfaces/IMintableERC20.sol";
 
@@ -11,20 +11,25 @@ import {IMintableERC20} from "../interfaces/IMintableERC20.sol";
  * @title Mintable OFT
  * @dev An OFT token that can be minted by a minter.
  */
-contract MintableOFT is OFT, AccessControl, IMintableERC20 {
+contract MintableOFTUpgradeable is OFTUpgradeable, AccessControlUpgradeable, IMintableERC20 {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     /**
      * @dev Constructor for MintableOFT
+     * @param endpoint The layer zero endpoint address
+     */
+    constructor(address endpoint) OFTUpgradeable(endpoint) {}
+
+    /**
+     * @dev Initializes the contract
      * @param name The name of the token
      * @param symbol The symbol of the token
-     * @param endpoint The layer zero endpoint address
      * @param owner The owner of the token
      */
-    constructor(string memory name, string memory symbol, address endpoint, address owner)
-        OFT(name, symbol, endpoint, owner)
-        Ownable(owner)
-    {
+    function initialize(string memory name, string memory symbol, address owner) external virtual initializer {
+        __OFT_init(name, symbol, owner);
+        __Ownable_init(owner);
+
         _grantRole(DEFAULT_ADMIN_ROLE, owner);
     }
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {L1BaseReceiver} from "../L1BaseReceiver.sol";
+import {L1BaseReceiverUpgradeable} from "../L1BaseReceiverUpgradeable.sol";
 import {ICrossDomainMessenger} from "../../interfaces/ICrossDomainMessenger.sol";
 import {Constants} from "../../libraries/Constants.sol";
 
@@ -11,16 +11,19 @@ import {Constants} from "../../libraries/Constants.sol";
  * @dev This contract receives messages from the L2 messenger and forwards them to the L1 sync pool
  * It only supports ETH
  */
-contract L1ModeReceiverETH is L1BaseReceiver {
+contract L1ModeReceiverETHUpgradeable is L1BaseReceiverUpgradeable {
     error L1ModeReceiverETH__OnlyETH();
 
     /**
-     * @dev Constructor for L1 Mode Receiver ETH
+     * @dev Initializer for L1 Mode Receiver ETH
      * @param l1SyncPool Address of the L1 sync pool
      * @param messenger Address of the messenger contract
      * @param owner Address of the owner
      */
-    constructor(address l1SyncPool, address messenger, address owner) L1BaseReceiver(l1SyncPool, messenger, owner) {}
+    function initialize(address l1SyncPool, address messenger, address owner) external initializer {
+        __Ownable_init(owner);
+        __L1BaseReceiver_init(l1SyncPool, messenger);
+    }
 
     /**
      * @dev Function to receive messages from the L2 messenger

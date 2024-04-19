@@ -6,8 +6,9 @@ import {
     MessagingReceipt
 } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 
-import {BaseMessenger} from "../../utils/BaseMessenger.sol";
-import {L2BaseSyncPool} from "../L2BaseSyncPool.sol";
+import {BaseMessengerUpgradeable} from "../../utils/BaseMessengerUpgradeable.sol";
+import {BaseReceiverUpgradeable} from "../../utils/BaseReceiverUpgradeable.sol";
+import {L2BaseSyncPoolUpgradeable} from "../L2BaseSyncPoolUpgradeable.sol";
 import {ICrossDomainMessenger} from "../../interfaces/ICrossDomainMessenger.sol";
 import {Constants} from "../../libraries/Constants.sol";
 import {IL1Receiver} from "../../interfaces/IL1Receiver.sol";
@@ -17,28 +18,43 @@ import {IL1Receiver} from "../../interfaces/IL1Receiver.sol";
  * @dev A sync pool that only supports ETH on Mode L2
  * This contract allows to send ETH from L2 to L1 during the sync process
  */
-contract L2ModeSyncPoolETH is L2BaseSyncPool, BaseMessenger {
+contract L2ModeSyncPoolETHUpgradeable is
+    L2BaseSyncPoolUpgradeable,
+    BaseMessengerUpgradeable,
+    BaseReceiverUpgradeable
+{
     error L2ModeSyncPoolETH__OnlyETH();
 
     /**
      * @dev Constructor for L2 Mode Sync Pool for ETH
-     * @param messenger The messenger contract address
+     * @param endpoint Address of the LayerZero endpoint
+     */
+    constructor(address endpoint) L2BaseSyncPoolUpgradeable(endpoint) {}
+
+    /**
+     * @dev Initialize the contract
      * @param l2ExchangeRateProvider Address of the exchange rate provider
      * @param rateLimiter Address of the rate limiter
      * @param tokenOut Address of the token to mint on Layer 2
      * @param dstEid Destination endpoint ID (most of the time, the Layer 1 endpoint ID)
-     * @param endpoint Address of the LayerZero endpoint
-     * @param owner Address of the owner
+     * @param messenger Address of the messenger contract (most of the time, the L2 native bridge address)
+     * @param receiver Address of the receiver contract (most of the time, the L1 receiver contract)
+     * @param delegate Address of the owner
      */
-    constructor(
-        address messenger,
+    function initialize(
         address l2ExchangeRateProvider,
         address rateLimiter,
         address tokenOut,
         uint32 dstEid,
-        address endpoint,
-        address owner
-    ) L2BaseSyncPool(l2ExchangeRateProvider, rateLimiter, tokenOut, dstEid, endpoint, owner) BaseMessenger(messenger) {}
+        address messenger,
+        address receiver,
+        address delegate
+    ) external initializer {
+        __L2BaseSyncPool_init(l2ExchangeRateProvider, rateLimiter, tokenOut, dstEid, delegate);
+        __BaseMessenger_init(messenger);
+        __BaseReceiver_init(receiver);
+        __Ownable_init(delegate);
+    }
 
     /**
      * @dev Only allows ETH to be received
@@ -76,17 +92,30 @@ contract L2ModeSyncPoolETH is L2BaseSyncPool, BaseMessenger {
             revert L2ModeSyncPoolETH__OnlyETH();
         }
 
-        address peer = address(uint160(uint256(_getPeerOrRevert(dstEid))));
+        address receiver = getReceiver();
+        address messenger = getMessenger();
+
         uint32 originEid = endpoint.eid();
 
         MessagingReceipt memory receipt =
             super._sync(dstEid, l2TokenIn, l1TokenIn, amountIn, amountOut, extraOptions, fee);
 
         bytes memory data = abi.encode(originEid, receipt.guid, l1TokenIn, amountIn, amountOut);
-        bytes memory message = abi.encodeWithSelector(IL1Receiver.onMessageReceived.selector, data);
+        bytes memory message = abi.encodeCall(IL1Receiver.onMessageReceived, data);
 
-        ICrossDomainMessenger(getMessenger()).sendMessage{value: amountIn}(peer, message, 0);
+        ICrossDomainMessenger(messenger).sendMessage{value: amountIn}(receiver, message, _minGasLimit());
 
         return receipt;
+    }
+
+    /**
+     * @dev Internal function to get the minimum gas limit
+     * This function should be overridden to set a minimum gas limit to forward during the execution of the message
+     * by the L1 receiver contract. This is mostly needed if the underlying contract have some try/catch mechanism
+     * as this could be abused by gas-griefing attacks.
+     * @return minGasLimit Minimum gas limit
+     */
+    function _minGasLimit() internal view virtual returns (uint32) {
+        return 0;
     }
 }
