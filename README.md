@@ -142,11 +142,11 @@ Say the setup of chains is such that we have 1 L1 chain (*`A`*) and two L2 chain
 
 ### Sync
 - `.sync()` - a public payable function called to sync tokens to Layer 1. Sends a LayerZero Message to L1SyncPool contract.
-  >[!NOTE]
-  > It is very important to listen for the `Sync` event to know when and how much tokens were synced especially if an action is required on another chain (for example, executing the message). If an action was required but was not executed, the tokens won't be sent to the L1.
-  > ```solidity
-  > emit Sync(dstEid, tokenIn, unsyncedAmountIn, unsyncedAmountOut);
-  > ```
+>[!NOTE]
+> It is very important to listen for the `Sync` event to know when and how much tokens were synced especially if an action is required on another chain (for example, executing the message). If an action was required but was not executed, the tokens won't be sent to the L1.
+> ```solidity
+> emit Sync(dstEid, tokenIn, unsyncedAmountIn, unsyncedAmountOut);
+> ```
 - `.lzReceive` on L1SyncPool is called 
   - increments the vault's (or lockbox) assets by the deposited amount
   - **Anticipates a deposit**: executes [`_anticipatedDeposit`](https://github.com/LayerZero-Labs/SyncPools/blob/5ef225b435f3df56f2255b034fe251c27e765d7f/contracts/examples/L1/L1SyncPoolETH.sol#L108) - Will mint the dummy tokens and deposit them to the L1 deposit pool
@@ -155,6 +155,6 @@ Say the setup of chains is such that we have 1 L1 chain (*`A`*) and two L2 chain
     - Will emit a Fee event if the actual amount out is equal or greater than the expected amount out. 
     - The fee kept in this contract will be used to back any future insufficient deposits. 
     - When the fee is used, the total unbacked tokens will be lower than the actual missing amount
-      >[!NOTE]
-      > Any time the `InsufficientDeposit` event is emitted, necessary actions should be taken to back the lock box (such as using POL, increasing the deposit fee on the faulty L2, etc.)
+    >[!NOTE]
+    > Any time the `InsufficientDeposit` event is emitted, necessary actions should be taken to back the lock box (such as using POL, increasing the deposit fee on the faulty L2, etc.)
     
