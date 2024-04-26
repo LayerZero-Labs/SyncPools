@@ -87,7 +87,7 @@ The `L2SyncPool` needs to know the current exchange rate between ETH and the LST
 
 # Setup
 
-Say the setup of chains is such that we have 1 L1 chain (*`A`*) and 2 L2 chains (*`<X>`* and *`<Y>`*). 
+Say the setup of chains is such that we have 1 L1 chain (*`A`*) and two L2 chains (*`<X>`* and *`<Y>`*). 
 > [!TIP]  
 > The [`examples/`](/contracts/examples/) directory has an example implementation of all of the contracts for Ethereum L1 and **Linea** and **Mode** L2. The [L1Deploy.sol](/script/L1/L1Deploy.sol) and [LineaDeploy.sol](/script/L2/LineaDeploy.sol) and [ModeDeploy.sol](/script/L2/ModeDeploy.sol) script goes through the entire deployment flow for L1 and L2.
 
@@ -142,7 +142,7 @@ Say the setup of chains is such that we have 1 L1 chain (*`A`*) and 2 L2 chains 
 
 ### Sync
 - `.sync()` - a public payable function called to sync tokens to Layer 1. Sends a LayerZero Message to L1SyncPool contract.
-  >[!IMPORTANT]
+  >[!NOTE]
   > It is very important to listen for the `Sync` event to know when and how much tokens were synced especially if an action is required on another chain (for example, executing the message). If an action was required but was not executed, the tokens won't be sent to the L1.
   > ```solidity
   > emit Sync(dstEid, tokenIn, unsyncedAmountIn, unsyncedAmountOut);
@@ -155,6 +155,6 @@ Say the setup of chains is such that we have 1 L1 chain (*`A`*) and 2 L2 chains 
     - Will emit a Fee event if the actual amount out is equal or greater than the expected amount out. 
     - The fee kept in this contract will be used to back any future insufficient deposits. 
     - When the fee is used, the total unbacked tokens will be lower than the actual missing amount
-      >[!IMPORTANT]
+      >[!NOTE]
       > Any time the `InsufficientDeposit` event is emitted, necessary actions should be taken to back the lock box (such as using POL, increasing the deposit fee on the faulty L2, etc.)
     
