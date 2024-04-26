@@ -155,6 +155,6 @@ Say the setup of chains is such that we have 1 L1 chain (*`A`*) and two L2 chain
     - Will emit a Fee event if the actual amount out is equal or greater than the expected amount out. 
     - The fee kept in this contract will be used to back any future insufficient deposits. 
     - When the fee is used, the total unbacked tokens will be lower than the actual missing amount
->[!NOTE]
-> Any time the `InsufficientDeposit` event is emitted, necessary actions should be taken to back the lock box (such as using POL, increasing the deposit fee on the faulty L2, etc.)
-    
+  >[!NOTE]
+  > Any time the `InsufficientDeposit` event is emitted, necessary actions should be taken to back the lock box (such as using POL, increasing the deposit fee on the faulty L2, etc.)
+      
